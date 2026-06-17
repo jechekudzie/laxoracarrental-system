@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; [print\\(k, v\\) for k,v in sorted\\(deps.items\\(\\)\\)]\")",
+      "Bash(vendor/bin/pint database/seeders/CostCenterSeeder.php database/seeders/DatabaseSeeder.php database/seeders/AdminUserSeeder.php config/branding.php --format agent)",
+      "mcp__laravel-boost__database-schema",
+      "Bash(vendor/bin/pint app/Enums/RecurrencePeriod.php app/Models/OperationalExpense.php app/Http/Controllers/Web/OperationalExpenseController.php --format agent)",
+      "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && grep \"public function\" {}')",
+      "Bash(git init *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)"
+    ]
+  }
+}
