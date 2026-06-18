@@ -1,13 +1,14 @@
 import { Head, router, setLayoutProps, useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import * as TemplateRoutes from '@/actions/App/Http/Controllers/Web/ExpenseTemplateController';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DateInput } from '@/components/ui/date-input';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import InputError from '@/components/input-error';
 import * as Routes from '@/actions/App/Http/Controllers/Web/OperationalExpenseController';
 import { dashboard } from '@/routes';
@@ -17,11 +18,15 @@ interface OperationalExpense {
     id: number;
     description: string;
     reference_number: string | null;
+    provider_invoice_number: string | null;
     category_label: string;
     category: string;
     amount: number;
     currency: string;
     expense_date: string;
+    invoice_date: string | null;
+    due_date: string | null;
+    is_overdue: boolean;
     status: string;
     status_label: string;
     cost_center: { id: number; name: string } | null;
@@ -220,8 +225,15 @@ export default function ExpensesIndex({
                                     </thead>
                                     <tbody className="divide-y">
                                         {expenses.data.map((e) => (
-                                            <tr key={e.id} className="hover:bg-muted/30 transition-colors">
-                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{e.expense_date}</td>
+                                            <tr key={e.id} className={`hover:bg-muted/30 transition-colors ${e.is_overdue ? 'bg-red-50/40 dark:bg-red-950/10' : ''}`}>
+                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                                                    <div>{e.expense_date}</div>
+                                                    {e.due_date && (
+                                                        <div className={`text-xs ${e.is_overdue ? 'text-red-600 font-medium' : 'text-muted-foreground'}`}>
+                                                            Due {e.due_date}
+                                                        </div>
+                                                    )}
+                                                </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1.5">
                                                         {e.is_recurring && (
@@ -231,8 +243,9 @@ export default function ExpensesIndex({
                                                         )}
                                                         <span className="font-medium">{e.description}</span>
                                                     </div>
-                                                    <div className="flex gap-2 text-xs text-muted-foreground">
+                                                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                                                         {e.service_provider && <span>{e.service_provider.name}</span>}
+                                                        {e.provider_invoice_number && <span>· Inv: {e.provider_invoice_number}</span>}
                                                         {e.reference_number && <span>· Ref: {e.reference_number}</span>}
                                                         {e.paid_at && <span className="text-green-600">· Paid {e.paid_at}</span>}
                                                     </div>
@@ -241,9 +254,16 @@ export default function ExpensesIndex({
                                                 <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{e.cost_center?.name ?? '—'}</td>
                                                 <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{fmt(e.amount)}</td>
                                                 <td className="px-4 py-3">
-                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status] ?? ''}`}>
-                                                        {e.status_label}
-                                                    </span>
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status] ?? ''}`}>
+                                                            {e.status_label}
+                                                        </span>
+                                                        {e.is_overdue && (
+                                                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                                                                Overdue
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center justify-end gap-1">
@@ -331,10 +351,13 @@ function ExpenseDialog({
     const { data, setData, post, put, processing, errors, reset } = useForm({
         description: editing?.description ?? '',
         reference_number: editing?.reference_number ?? '',
+        provider_invoice_number: editing?.provider_invoice_number ?? '',
         category: editing?.category ?? '',
         amount: String(editing?.amount ?? ''),
         currency: editing?.currency ?? 'USD',
         expense_date: editing?.expense_date ?? '',
+        invoice_date: editing?.invoice_date ?? '',
+        due_date: editing?.due_date ?? '',
         status: editing?.status ?? 'pending',
         cost_center_id: editing?.cost_center?.id ? String(editing.cost_center.id) : '',
         incurred_by: editing?.incurred_by?.id ? String(editing.incurred_by.id) : '',
@@ -346,21 +369,53 @@ function ExpenseDialog({
         recurrence_end_date: '',
     });
 
+    const [templates, setTemplates] = useState<{
+        id: number;
+        description: string;
+        default_cost_center_id: number | null;
+        default_cost_center_name: string | null;
+        default_service_provider_id: number | null;
+        default_service_provider_name: string | null;
+        typical_amount: number | null;
+    }[]>([]);
+
+    function handleCategoryChange(category: string) {
+        setData('category', category);
+        setTemplates([]);
+        if (!category) return;
+        fetch(TemplateRoutes.byCategory.url({ query: { category } }))
+            .then((r) => r.json())
+            .then(setTemplates)
+            .catch(() => {});
+    }
+
+    function applyTemplate(t: typeof templates[0]) {
+        setData((prev) => ({
+            ...prev,
+            description: t.description,
+            cost_center_id: t.default_cost_center_id ? String(t.default_cost_center_id) : prev.cost_center_id,
+            service_provider_id: t.default_service_provider_id ? String(t.default_service_provider_id) : prev.service_provider_id,
+            amount: t.typical_amount ? String(t.typical_amount) : prev.amount,
+        }));
+        setTemplates([]);
+    }
+
+    // Cost centers linked by templates for the selected category (only when templates have assignments)
+    const suggestedCostCenters = templates.length > 0
+        ? cost_centers.filter((cc) => templates.some((t) => t.default_cost_center_id === cc.id))
+        : [];
+    const otherCostCenters = cost_centers.filter((cc) => !suggestedCostCenters.some((s) => s.id === cc.id));
+
     function handleProviderChange(providerId: string) {
         setData('service_provider_id', providerId);
-        // Auto-suggest category from provider's category field
         const provider = service_providers.find((p) => String(p.id) === providerId);
         if (provider && !data.category) {
             const categoryMap: Record<string, string> = {
-                mechanic: 'repairs',
-                it: 'it',
-                security: 'security',
-                cleaning: 'cleaning',
-                internet: 'it',
-                fuel: 'transport',
+                mechanic: 'repairs', it: 'it', security: 'security',
+                cleaning: 'cleaning', internet: 'it', fuel: 'transport',
             };
             const suggested = categoryMap[provider.category.toLowerCase()];
-            if (suggested) setData('category', suggested);
+            if (suggested) handleCategoryChange(suggested);
         }
     }
 
@@ -374,8 +429,13 @@ function ExpenseDialog({
         }
     }
 
+    function handleOpenChange(isOpen: boolean) {
+        if (!isOpen) setTemplates([]);
+        onOpenChange(isOpen);
+    }
+
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{editing ? 'Edit Expense' : 'Add Expense'}</DialogTitle>
@@ -403,15 +463,37 @@ function ExpenseDialog({
                         <InputError message={errors.service_provider_id} />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="space-y-1 sm:col-span-2">
                         <Label>Category</Label>
-                        <Select value={data.category} onValueChange={(v) => setData('category', v)}>
+                        <Select value={data.category} onValueChange={handleCategoryChange}>
                             <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                             <SelectContent>
                                 {categories.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                             </SelectContent>
                         </Select>
                         <InputError message={errors.category} />
+                        {templates.length > 0 && (
+                            <div className="mt-2 space-y-1">
+                                <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                    <Sparkles className="h-3 w-3" /> Suggested line items — click to auto-fill:
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {templates.map((t) => (
+                                        <button
+                                            key={t.id}
+                                            type="button"
+                                            onClick={() => applyTemplate(t)}
+                                            className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                                        >
+                                            {t.description}
+                                            {t.typical_amount && (
+                                                <span className="text-muted-foreground ml-0.5">· {fmt(t.typical_amount)}</span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-1">
@@ -419,7 +501,31 @@ function ExpenseDialog({
                         <Select value={data.cost_center_id} onValueChange={(v) => setData('cost_center_id', v)}>
                             <SelectTrigger><SelectValue placeholder="Select cost center" /></SelectTrigger>
                             <SelectContent>
-                                {cost_centers.map((cc) => <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>)}
+                                {suggestedCostCenters.length > 0 ? (
+                                    <>
+                                        <SelectGroup>
+                                            <SelectLabel>Suggested for this category</SelectLabel>
+                                            {suggestedCostCenters.map((cc) => (
+                                                <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
+                                            ))}
+                                        </SelectGroup>
+                                        {otherCostCenters.length > 0 && (
+                                            <>
+                                                <SelectSeparator />
+                                                <SelectGroup>
+                                                    <SelectLabel>Other cost centers</SelectLabel>
+                                                    {otherCostCenters.map((cc) => (
+                                                        <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
+                                                    ))}
+                                                </SelectGroup>
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    cost_centers.map((cc) => (
+                                        <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>
+                                    ))
+                                )}
                             </SelectContent>
                         </Select>
                         <InputError message={errors.cost_center_id} />
@@ -438,10 +544,32 @@ function ExpenseDialog({
                     </div>
 
                     <div className="space-y-1">
-                        <Label htmlFor="exp-ref">Reference / Invoice #</Label>
-                        <Input id="exp-ref" value={data.reference_number} onChange={(e) => setData('reference_number', e.target.value)} placeholder="INV-001" />
+                        <Label htmlFor="exp-ref">Your Reference #</Label>
+                        <Input id="exp-ref" value={data.reference_number} onChange={(e) => setData('reference_number', e.target.value)} placeholder="REF-001" />
                         <InputError message={errors.reference_number} />
                     </div>
+
+                    {data.service_provider_id && data.service_provider_id !== 'none' && (
+                        <>
+                            <div className="space-y-1">
+                                <Label htmlFor="exp-vendor-inv">Vendor Invoice #</Label>
+                                <Input id="exp-vendor-inv" value={data.provider_invoice_number} onChange={(e) => setData('provider_invoice_number', e.target.value)} placeholder="INV-2026-001" />
+                                <InputError message={errors.provider_invoice_number} />
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label>Invoice Date</Label>
+                                <DateInput value={data.invoice_date} onChange={(e) => setData('invoice_date', e.target.value)} />
+                                <InputError message={errors.invoice_date} />
+                            </div>
+
+                            <div className="space-y-1">
+                                <Label>Payment Due Date</Label>
+                                <DateInput value={data.due_date} onChange={(e) => setData('due_date', e.target.value)} />
+                                <InputError message={errors.due_date} />
+                            </div>
+                        </>
+                    )}
 
                     <div className="space-y-1">
                         <Label>Incurred By <span className="text-muted-foreground">(optional)</span></Label>

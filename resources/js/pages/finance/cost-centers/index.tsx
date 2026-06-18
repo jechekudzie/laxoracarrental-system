@@ -1,5 +1,5 @@
 import { Head, router, setLayoutProps, useForm } from '@inertiajs/react';
-import { Building2, Pencil, Plus, Search, Trash2, Users, Receipt, ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
+import { Building2, ClipboardList, Pencil, Plus, Receipt, Search, Trash2, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -57,6 +57,10 @@ export default function CostCentersIndex({
     const [editing, setEditing] = useState<CostCenter | null>(null);
     const [viewing, setViewing] = useState<CostCenter | null>(null);
 
+    const totalBudget = centers.data.reduce((sum, c) => sum + c.budget_amount, 0);
+    const totalSpent = centers.data.reduce((sum, c) => sum + c.total_spent, 0);
+    const overallPct = totalBudget > 0 ? Math.min(100, (totalSpent / totalBudget) * 100) : 0;
+
     function applyFilter(params: Record<string, string>) {
         router.get(Routes.index.url(), { ...filters, ...params }, { preserveState: true, replace: true });
     }
@@ -82,14 +86,58 @@ export default function CostCentersIndex({
             <Head title="Cost Centers" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
+                {/* Header */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Cost Centers</h1>
                         <p className="text-sm text-muted-foreground">Manage budget allocation and spending across departments.</p>
                     </div>
-                    <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> Add Cost Center</Button>
+                    <Button onClick={openNew}>
+                        <Plus className="mr-2 h-4 w-4" /> Add Cost Center
+                    </Button>
                 </div>
 
+                {/* Summary banner */}
+                {centers.data.length > 0 && (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <Card>
+                            <CardContent className="flex items-center gap-4 p-5">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                    <Wallet className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Total Budget</p>
+                                    <p className="text-xl font-bold">{formatCurrency(totalBudget)}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="flex items-center gap-4 p-5">
+                                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                                    <TrendingUp className="h-5 w-5" />
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground">Total Spent</p>
+                                    <p className="text-xl font-bold">{formatCurrency(totalSpent)}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardContent className="p-5">
+                                <p className="text-xs text-muted-foreground">Overall Utilization</p>
+                                <p className="mt-0.5 text-xl font-bold">{overallPct.toFixed(1)}%</p>
+                                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                    <div
+                                        className={`h-full rounded-full transition-all ${overallPct >= 100 ? 'bg-destructive' : overallPct >= 80 ? 'bg-orange-500' : 'bg-primary'}`}
+                                        style={{ width: `${overallPct}%` }}
+                                    />
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                )}
+
+                {/* Search bar */}
                 <div className="flex flex-wrap items-center gap-3">
                     <form
                         onSubmit={(e) => {
@@ -104,100 +152,144 @@ export default function CostCentersIndex({
                             onChange={(e) => setSearch(e.target.value)}
                             className="max-w-xs"
                         />
-                        <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                        <Button type="submit" variant="outline" size="icon">
+                            <Search className="h-4 w-4" />
+                        </Button>
                     </form>
                 </div>
 
+                {/* Empty state */}
                 {centers.data.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                                <Building2 className="h-6 w-6 text-muted-foreground" />
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                                <Building2 className="h-7 w-7 text-muted-foreground" />
                             </div>
                             <p className="text-lg font-semibold">No cost centers yet</p>
-                            <p className="text-sm text-muted-foreground max-w-md">Create cost centers to track budgets and expenses across departments.</p>
-                            <Button onClick={openNew} className="mt-2"><Plus className="mr-2 h-4 w-4" /> Add your first cost center</Button>
+                            <p className="max-w-md text-sm text-muted-foreground">
+                                Create cost centers to track budgets and expenses across departments.
+                            </p>
+                            <Button onClick={openNew} className="mt-2">
+                                <Plus className="mr-2 h-4 w-4" /> Add your first cost center
+                            </Button>
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="overflow-x-auto rounded-lg border">
-                        <table className="w-full text-sm">
-                            <thead className="border-b bg-muted/50">
-                                <tr>
-                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Code</th>
-                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Name</th>
-                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Budget</th>
-                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Spent</th>
-                                    <th className="px-4 py-3 text-right font-medium text-muted-foreground">Employees</th>
-                                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Active</th>
-                                    <th className="px-4 py-3" />
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {centers.data.map((c) => {
-                                    const spentPct = c.budget_amount > 0
-                                        ? Math.min(100, (c.total_spent / c.budget_amount) * 100)
-                                        : 0;
-                                    const isOverBudget = c.total_spent > c.budget_amount;
+                    /* Card grid */
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {centers.data.map((c) => {
+                            const spentPct = c.budget_amount > 0 ? Math.min(100, (c.total_spent / c.budget_amount) * 100) : 0;
+                            const isOverBudget = c.total_spent > c.budget_amount;
 
-                                    return (
-                                        <tr
-                                            key={c.id}
-                                            className="bg-background hover:bg-muted/30 transition-colors cursor-pointer"
-                                            onClick={() => setViewing(c)}
+                            return (
+                                <Card
+                                    key={c.id}
+                                    className="group relative flex cursor-pointer flex-col overflow-hidden transition-shadow hover:shadow-md"
+                                    onClick={() => setViewing(c)}
+                                >
+                                    {/* Active badge */}
+                                    <div className="absolute right-3 top-3">
+                                        {c.is_active ? (
+                                            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                Active
+                                            </span>
+                                        ) : (
+                                            <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                                                Inactive
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    <CardContent className="flex flex-1 flex-col gap-4 p-5">
+                                        {/* Identity */}
+                                        <div className="pr-16">
+                                            <div className="flex items-center gap-2">
+                                                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-medium text-muted-foreground">
+                                                    {c.code}
+                                                </span>
+                                            </div>
+                                            <p className="mt-1.5 font-semibold leading-tight">{c.name}</p>
+                                            {c.description && (
+                                                <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">{c.description}</p>
+                                            )}
+                                        </div>
+
+                                        {/* Budget progress */}
+                                        <div className="space-y-2">
+                                            <div className="flex items-center justify-between text-xs">
+                                                <span className="text-muted-foreground">Budget usage</span>
+                                                <span className={`font-semibold tabular-nums ${isOverBudget ? 'text-destructive' : 'text-foreground'}`}>
+                                                    {spentPct.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                                                <div
+                                                    className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-destructive' : spentPct >= 80 ? 'bg-orange-500' : 'bg-primary'}`}
+                                                    style={{ width: `${spentPct}%` }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between text-xs tabular-nums">
+                                                <span className={isOverBudget ? 'font-medium text-destructive' : 'text-muted-foreground'}>
+                                                    {formatCurrency(c.total_spent)} spent
+                                                </span>
+                                                <span className="text-muted-foreground">{formatCurrency(c.budget_amount)}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Stats row */}
+                                        <div className="grid grid-cols-3 divide-x rounded-lg border text-center text-xs">
+                                            <div className="flex flex-col items-center gap-0.5 py-2.5">
+                                                <Users className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <span className="font-bold">{c.employees_count}</span>
+                                                <span className="text-muted-foreground">Employees</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-0.5 py-2.5">
+                                                <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <span className="font-bold">{c.operational_expenses_count}</span>
+                                                <span className="text-muted-foreground">Expenses</span>
+                                            </div>
+                                            <div className="flex flex-col items-center gap-0.5 py-2.5">
+                                                <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
+                                                <span className="font-bold">{c.requisitions_count}</span>
+                                                <span className="text-muted-foreground">Requisitions</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Card actions */}
+                                        <div
+                                            className="flex items-center justify-end gap-1 border-t pt-3"
+                                            onClick={(e) => e.stopPropagation()}
                                         >
-                                            <td className="px-4 py-3 font-mono text-xs font-medium">{c.code}</td>
-                                            <td className="px-4 py-3">
-                                                <div className="font-medium">{c.name}</div>
-                                                {c.description && (
-                                                    <div className="text-xs text-muted-foreground line-clamp-1">{c.description}</div>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3">{formatCurrency(c.budget_amount)}</td>
-                                            <td className="px-4 py-3 min-w-[140px]">
-                                                <div className="space-y-1">
-                                                    <span className={isOverBudget ? 'text-destructive font-medium' : ''}>{formatCurrency(c.total_spent)}</span>
-                                                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                                                        <div
-                                                            className={`h-full rounded-full transition-all ${isOverBudget ? 'bg-destructive' : 'bg-primary'}`}
-                                                            style={{ width: `${spentPct}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-4 py-3 text-right">{c.employees_count}</td>
-                                            <td className="px-4 py-3">
-                                                {c.is_active ? (
-                                                    <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                        Active
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-                                                        Inactive
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(c)}>
-                                                        <Pencil className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                    <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(c)}>
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                    </Button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 gap-1.5 text-xs"
+                                                onClick={() => openEdit(c)}
+                                            >
+                                                <Pencil className="h-3.5 w-3.5" /> Edit
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 gap-1.5 text-xs text-destructive hover:text-destructive"
+                                                onClick={() => handleDelete(c)}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" /> Delete
+                                            </Button>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            );
+                        })}
                     </div>
                 )}
 
+                {/* Pagination */}
                 {centers.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{centers.from}–{centers.to} of {centers.total}</span>
+                        <span>
+                            {centers.from}–{centers.to} of {centers.total}
+                        </span>
                         <div className="flex gap-1">
                             {centers.links.map((link, i) => (
                                 <Button
@@ -215,7 +307,14 @@ export default function CostCentersIndex({
             </div>
 
             <CostCenterDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
-            <CostCenterViewModal center={viewing} onClose={() => setViewing(null)} onEdit={(c) => { setViewing(null); openEdit(c); }} />
+            <CostCenterViewModal
+                center={viewing}
+                onClose={() => setViewing(null)}
+                onEdit={(c) => {
+                    setViewing(null);
+                    openEdit(c);
+                }}
+            />
         </>
     );
 }

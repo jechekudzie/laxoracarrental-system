@@ -59,6 +59,12 @@ class EmployeeController extends Controller
             'cost_centers' => CostCenter::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
             'employment_types' => collect(EmploymentType::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->label()]),
             'salary_types' => collect(SalaryType::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->label()]),
+            'summary' => [
+                'total' => Employee::count(),
+                'active' => Employee::where('is_active', true)->count(),
+                'total_payroll' => (float) Employee::where('is_active', true)->sum('base_salary'),
+                'departments' => Employee::whereNotNull('cost_center_id')->distinct('cost_center_id')->count(),
+            ],
         ]);
     }
 
@@ -109,6 +115,9 @@ class EmployeeController extends Controller
                 'status' => $s->status->value,
                 'status_label' => $s->status->label(),
             ]),
+            'employment_types' => collect(EmploymentType::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->label()]),
+            'salary_types' => collect(SalaryType::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->label()]),
+            'cost_centers' => CostCenter::where('is_active', true)->orderBy('name')->get(['id', 'name', 'code']),
         ]);
     }
 

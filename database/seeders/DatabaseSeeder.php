@@ -16,6 +16,8 @@ class DatabaseSeeder extends Seeder
             BookingCategorySeeder::class,
             VehicleSeeder::class,
             CostCenterSeeder::class,
+            PaymentMethodSeeder::class,
+            ExpenseTemplateSeeder::class,
             DemoDataSeeder::class,
         ]);
     }

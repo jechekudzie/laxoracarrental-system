@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Web;
 
+use App\Enums\ExpenseCategory;
+use App\Enums\ExpenseStatus;
 use App\Enums\Priority;
 use App\Enums\RequisitionStatus;
 use App\Http\Controllers\Controller;
 use App\Models\CostCenter;
+use App\Models\OperationalExpense;
 use App\Models\Requisition;
 use App\Models\RequisitionItem;
 use Illuminate\Http\RedirectResponse;
@@ -54,6 +57,12 @@ class RequisitionController extends Controller
             'statuses' => collect(RequisitionStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()]),
             'priorities' => collect(Priority::cases())->map(fn ($p) => ['value' => $p->value, 'label' => $p->label()]),
             'cost_centers' => CostCenter::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'summary' => [
+                'total' => Requisition::count(),
+                'pending' => Requisition::where('status', 'pending')->count(),
+                'approved' => Requisition::where('status', 'approved')->count(),
+                'total_value' => (float) Requisition::sum('total_estimated'),
+            ],
         ]);
     }
 
@@ -167,6 +176,24 @@ class RequisitionController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Requisition marked as fulfilled.']);
 
         return back();
+    }
+
+    public function toExpense(Requisition $requisition): RedirectResponse
+    {
+        $expense = OperationalExpense::create([
+            'description' => $requisition->title,
+            'category' => ExpenseCategory::Other,
+            'amount' => $requisition->total_estimated,
+            'currency' => 'USD',
+            'expense_date' => now()->toDateString(),
+            'cost_center_id' => $requisition->cost_center_id,
+            'status' => ExpenseStatus::Pending,
+            'notes' => "Generated from requisition {$requisition->number}.",
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Expense created from requisition {$requisition->number}. Edit to set category and details."]);
+
+        return redirect()->route('finance.expenses.index');
     }
 
     public function destroy(Requisition $requisition): RedirectResponse

@@ -157,10 +157,18 @@ export default function RequisitionShow({ requisition }: { requisition: Requisit
                             </>
                         )}
                         {requisition.status === 'approved' && (
-                            <Button onClick={handleFulfill}>
-                                <Package className="mr-2 h-4 w-4" />
-                                Mark Fulfilled
-                            </Button>
+                            <>
+                                <Button onClick={handleFulfill}>
+                                    <Package className="mr-2 h-4 w-4" />
+                                    Mark Fulfilled
+                                </Button>
+                                <Button
+                                    className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    onClick={() => router.post(Routes.toExpense.url({ requisition: requisition.id }), {})}
+                                >
+                                    Convert to Expense
+                                </Button>
+                            </>
                         )}
                     </div>
                 </div>

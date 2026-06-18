@@ -1,5 +1,5 @@
 import { Head, router, setLayoutProps, useForm } from '@inertiajs/react';
-import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { ClipboardList, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -22,7 +22,7 @@ interface WorkerTask {
     priority: string;
     priority_label: string;
     due_date: string | null;
-    assigned_to: { id: number; full_name: string } | null;
+    assigned_to: string | null;
     cost_center: { id: number; name: string } | null;
     vehicle: string | null;
 }
@@ -34,6 +34,13 @@ interface PaginatedData<T> {
     total: number;
     from: number;
     to: number;
+}
+
+interface Summary {
+    total: number;
+    pending: number;
+    in_progress: number;
+    completed: number;
 }
 
 const PRIORITY_STYLES: Record<string, string> = {
@@ -50,6 +57,20 @@ const STATUS_STYLES: Record<string, string> = {
     cancelled: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
 };
 
+const STAT_CARDS = [
+    { key: 'total' as const, label: 'Total Tasks', color: 'text-foreground' },
+    { key: 'pending' as const, label: 'Pending', color: 'text-yellow-600 dark:text-yellow-400' },
+    { key: 'in_progress' as const, label: 'In Progress', color: 'text-blue-600 dark:text-blue-400' },
+    { key: 'completed' as const, label: 'Completed', color: 'text-green-600 dark:text-green-400' },
+];
+
+function isOverdue(dueDate: string | null, status: string): boolean {
+    if (!dueDate || status === 'completed' || status === 'cancelled') {
+        return false;
+    }
+    return new Date(dueDate) < new Date(new Date().toDateString());
+}
+
 export default function TasksIndex({
     tasks,
     filters,
@@ -58,6 +79,7 @@ export default function TasksIndex({
     employees,
     cost_centers,
     vehicles,
+    summary,
 }: {
     tasks: PaginatedData<WorkerTask>;
     filters: { search?: string; status?: string; priority?: string; employee_id?: string; cost_center_id?: string };
@@ -65,13 +87,14 @@ export default function TasksIndex({
     priorities: { value: string; label: string }[];
     employees: { id: number; full_name: string }[];
     cost_centers: { id: number; name: string }[];
-    vehicles: { id: number; label: string; reg_plate: string }[];
+    vehicles: { id: number; make: string; model: string; reg_plate: string }[];
+    summary: Summary;
 }) {
     setLayoutProps({
         breadcrumbs: [
             { title: 'Dashboard', href: dashboard.url() },
             { title: 'Finance', href: financeIndex.url() },
-            { title: 'Tasks', href: Routes.index.url() },
+            { title: 'Worker Tasks', href: Routes.index.url() },
         ],
     });
 
@@ -104,14 +127,31 @@ export default function TasksIndex({
             <Head title="Worker Tasks" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
+                {/* Page Header */}
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Worker Tasks</h1>
-                        <p className="text-sm text-muted-foreground">Assign and track tasks for your workforce.</p>
+                        <p className="text-sm text-muted-foreground">Assign and track operational tasks for your team.</p>
                     </div>
-                    <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> Add Task</Button>
+                    <Button onClick={openNew}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Assign Task
+                    </Button>
                 </div>
 
+                {/* Summary Stat Cards */}
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    {STAT_CARDS.map(({ key, label, color }) => (
+                        <Card key={key}>
+                            <CardContent className="px-5 py-4">
+                                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
+                                <p className={`mt-1 text-3xl font-bold tabular-nums ${color}`}>{summary[key]}</p>
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3">
                     <form
                         onSubmit={(e) => {
@@ -126,48 +166,85 @@ export default function TasksIndex({
                             onChange={(e) => setSearch(e.target.value)}
                             className="max-w-xs"
                         />
-                        <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                        <Button type="submit" variant="outline" size="icon">
+                            <Search className="h-4 w-4" />
+                        </Button>
                     </form>
 
                     <Select value={filters.status ?? ''} onValueChange={(v) => applyFilter({ status: v === 'all' ? '' : v })}>
-                        <SelectTrigger className="w-40"><SelectValue placeholder="All statuses" /></SelectTrigger>
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="All statuses" />
+                        </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All statuses</SelectItem>
-                            {statuses.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                            {statuses.map((s) => (
+                                <SelectItem key={s.value} value={s.value}>
+                                    {s.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
                     <Select value={filters.priority ?? ''} onValueChange={(v) => applyFilter({ priority: v === 'all' ? '' : v })}>
-                        <SelectTrigger className="w-40"><SelectValue placeholder="All priorities" /></SelectTrigger>
+                        <SelectTrigger className="w-40">
+                            <SelectValue placeholder="All priorities" />
+                        </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All priorities</SelectItem>
-                            {priorities.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                            {priorities.map((p) => (
+                                <SelectItem key={p.value} value={p.value}>
+                                    {p.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
                     <Select value={filters.employee_id ?? ''} onValueChange={(v) => applyFilter({ employee_id: v === 'all' ? '' : v })}>
-                        <SelectTrigger className="w-44"><SelectValue placeholder="All employees" /></SelectTrigger>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder="All employees" />
+                        </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All employees</SelectItem>
-                            {employees.map((emp) => <SelectItem key={emp.id} value={String(emp.id)}>{emp.full_name}</SelectItem>)}
+                            {employees.map((emp) => (
+                                <SelectItem key={emp.id} value={String(emp.id)}>
+                                    {emp.full_name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
 
                     <Select value={filters.cost_center_id ?? ''} onValueChange={(v) => applyFilter({ cost_center_id: v === 'all' ? '' : v })}>
-                        <SelectTrigger className="w-44"><SelectValue placeholder="All cost centers" /></SelectTrigger>
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder="All cost centers" />
+                        </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All cost centers</SelectItem>
-                            {cost_centers.map((cc) => <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>)}
+                            {cost_centers.map((cc) => (
+                                <SelectItem key={cc.id} value={String(cc.id)}>
+                                    {cc.name}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
 
+                {/* Task Table or Empty State */}
                 {tasks.data.length === 0 ? (
                     <Card>
-                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-                            <p className="text-lg font-semibold">No tasks found</p>
-                            <p className="text-sm text-muted-foreground max-w-md">Create tasks to manage your workforce assignments.</p>
-                            <Button onClick={openNew} className="mt-2"><Plus className="mr-2 h-4 w-4" /> Add first task</Button>
+                        <CardContent className="flex flex-col items-center gap-4 py-20 text-center">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
+                                <ClipboardList className="h-7 w-7 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-base font-semibold">No tasks found</p>
+                                <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                                    Create tasks to manage and track assignments across your workforce.
+                                </p>
+                            </div>
+                            <Button onClick={openNew} className="mt-1">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Assign first task
+                            </Button>
                         </CardContent>
                     </Card>
                 ) : (
@@ -177,76 +254,120 @@ export default function TasksIndex({
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b bg-muted/50">
-                                            <th className="px-4 py-3 text-left font-medium">Title</th>
-                                            <th className="px-4 py-3 text-left font-medium">Assigned To</th>
-                                            <th className="px-4 py-3 text-left font-medium">Priority</th>
-                                            <th className="px-4 py-3 text-left font-medium">Due Date</th>
-                                            <th className="px-4 py-3 text-left font-medium">Vehicle</th>
+                                            <th className="px-4 py-3 text-left font-medium">Task</th>
                                             <th className="px-4 py-3 text-left font-medium">Status</th>
+                                            <th className="px-4 py-3 text-left font-medium">Priority</th>
+                                            <th className="px-4 py-3 text-left font-medium">Assigned To</th>
+                                            <th className="px-4 py-3 text-left font-medium">Due Date</th>
+                                            <th className="px-4 py-3 text-left font-medium">Cost Center</th>
+                                            <th className="px-4 py-3 text-left font-medium">Vehicle</th>
                                             <th className="px-4 py-3 text-right font-medium">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {tasks.data.map((t) => (
-                                            <tr key={t.id} className="hover:bg-muted/30 transition-colors">
-                                                <td className="px-4 py-3">
-                                                    <div className="font-medium">{t.title}</div>
-                                                    {t.description && (
-                                                        <div className="text-xs text-muted-foreground line-clamp-1">{t.description}</div>
-                                                    )}
-                                                </td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
-                                                    {t.assigned_to?.full_name ?? '—'}
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[t.priority] ?? ''}`}>
-                                                        {t.priority_label}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{t.due_date ?? '—'}</td>
-                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">{t.vehicle ?? '—'}</td>
-                                                <td className="px-4 py-3">
-                                                    <Select
-                                                        value={t.status}
-                                                        onValueChange={(v) =>
-                                                            router.post(
-                                                                Routes.updateStatus.url({ workerTask: t.id }),
-                                                                { status: v },
-                                                                { preserveScroll: true },
-                                                            )
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="h-7 w-36 text-xs">
-                                                            <SelectValue>
-                                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[t.status] ?? ''}`}>
-                                                                    {t.status_label}
-                                                                </span>
-                                                            </SelectValue>
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {statuses.map((s) => (
-                                                                <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex items-center justify-end gap-1">
-                                                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(t)}>
-                                                            <Pencil className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                        <Button
-                                                            size="icon"
-                                                            variant="ghost"
-                                                            className="h-8 w-8 text-destructive hover:text-destructive"
-                                                            onClick={() => handleDelete(t)}
+                                        {tasks.data.map((t) => {
+                                            const overdue = isOverdue(t.due_date, t.status);
+                                            return (
+                                                <tr key={t.id} className="transition-colors hover:bg-muted/30">
+                                                    {/* Task title + description */}
+                                                    <td className="max-w-xs px-4 py-3">
+                                                        <div className="font-medium leading-snug">{t.title}</div>
+                                                        {t.description && (
+                                                            <div className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                                                                {t.description}
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Inline status selector */}
+                                                    <td className="px-4 py-3">
+                                                        <Select
+                                                            value={t.status}
+                                                            onValueChange={(v) =>
+                                                                router.post(
+                                                                    Routes.updateStatus.url({ workerTask: t.id }),
+                                                                    { status: v },
+                                                                    { preserveScroll: true },
+                                                                )
+                                                            }
                                                         >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </Button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                                            <SelectTrigger className="h-7 w-36 border-0 bg-transparent p-0 shadow-none focus:ring-0">
+                                                                <SelectValue>
+                                                                    <span
+                                                                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[t.status] ?? ''}`}
+                                                                    >
+                                                                        {t.status_label}
+                                                                    </span>
+                                                                </SelectValue>
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {statuses.map((s) => (
+                                                                    <SelectItem key={s.value} value={s.value}>
+                                                                        {s.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </td>
+
+                                                    {/* Priority badge */}
+                                                    <td className="px-4 py-3">
+                                                        <span
+                                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_STYLES[t.priority] ?? ''}`}
+                                                        >
+                                                            {t.priority_label}
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Assigned to */}
+                                                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                                                        {t.assigned_to ?? '—'}
+                                                    </td>
+
+                                                    {/* Due date — red if overdue */}
+                                                    <td
+                                                        className={`whitespace-nowrap px-4 py-3 text-sm font-medium ${overdue ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}
+                                                    >
+                                                        {t.due_date ?? '—'}
+                                                        {overdue && <span className="ml-1 text-xs font-normal">(overdue)</span>}
+                                                    </td>
+
+                                                    {/* Cost center */}
+                                                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                                                        {t.cost_center?.name ?? '—'}
+                                                    </td>
+
+                                                    {/* Vehicle */}
+                                                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                                                        {t.vehicle ?? '—'}
+                                                    </td>
+
+                                                    {/* Actions */}
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center justify-end gap-1">
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-8 w-8"
+                                                                onClick={() => openEdit(t)}
+                                                                title="Edit task"
+                                                            >
+                                                                <Pencil className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                            <Button
+                                                                size="icon"
+                                                                variant="ghost"
+                                                                className="h-8 w-8 text-destructive hover:text-destructive"
+                                                                onClick={() => handleDelete(t)}
+                                                                title="Delete task"
+                                                            >
+                                                                <Trash2 className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -254,9 +375,12 @@ export default function TasksIndex({
                     </Card>
                 )}
 
+                {/* Pagination */}
                 {tasks.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{tasks.from}–{tasks.to} of {tasks.total}</span>
+                        <span>
+                            {tasks.from}–{tasks.to} of {tasks.total}
+                        </span>
                         <div className="flex gap-1">
                             {tasks.links.map((link, i) => (
                                 <Button
@@ -300,13 +424,13 @@ function TaskDialog({
     editing: WorkerTask | null;
     employees: { id: number; full_name: string }[];
     cost_centers: { id: number; name: string }[];
-    vehicles: { id: number; label: string; reg_plate: string }[];
+    vehicles: { id: number; make: string; model: string; reg_plate: string }[];
     priorities: { value: string; label: string }[];
 }) {
     const { data, setData, post, put, processing, errors, reset } = useForm({
         title: editing?.title ?? '',
         description: editing?.description ?? '',
-        assigned_to_id: editing?.assigned_to?.id ? String(editing.assigned_to.id) : '',
+        assigned_to_id: '',
         cost_center_id: editing?.cost_center?.id ? String(editing.cost_center.id) : '',
         vehicle_id: '',
         priority: editing?.priority ?? 'medium',
@@ -333,8 +457,10 @@ function TaskDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-xl">
                 <DialogHeader>
-                    <DialogTitle>{editing ? 'Edit Task' : 'Add Task'}</DialogTitle>
-                    <DialogDescription>Assign a task to a worker with priority and due date.</DialogDescription>
+                    <DialogTitle>{editing ? 'Edit Task' : 'Assign Task'}</DialogTitle>
+                    <DialogDescription>
+                        {editing ? 'Update this task details.' : 'Assign a new task to a worker with priority and due date.'}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
@@ -344,7 +470,7 @@ function TaskDialog({
                             id="task-title"
                             value={data.title}
                             onChange={(e) => setData('title', e.target.value)}
-                            placeholder="Oil change for ABC 123"
+                            placeholder="e.g. Oil change for ABC 123"
                         />
                         <InputError message={errors.title} />
                     </div>
@@ -353,7 +479,7 @@ function TaskDialog({
                         <Label htmlFor="task-description">Description</Label>
                         <textarea
                             id="task-description"
-                            value={data.description}
+                            value={data.description ?? ''}
                             onChange={(e) => setData('description', e.target.value)}
                             rows={2}
                             className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
@@ -365,20 +491,49 @@ function TaskDialog({
                     <div className="space-y-1">
                         <Label>Assigned To</Label>
                         <Select value={data.assigned_to_id} onValueChange={(v) => setData('assigned_to_id', v)}>
-                            <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select employee" />
+                            </SelectTrigger>
                             <SelectContent>
-                                {employees.map((emp) => <SelectItem key={emp.id} value={String(emp.id)}>{emp.full_name}</SelectItem>)}
+                                {employees.map((emp) => (
+                                    <SelectItem key={emp.id} value={String(emp.id)}>
+                                        {emp.full_name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <InputError message={errors.assigned_to_id} />
                     </div>
 
                     <div className="space-y-1">
+                        <Label>Priority</Label>
+                        <Select value={data.priority} onValueChange={(v) => setData('priority', v)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {priorities.map((p) => (
+                                    <SelectItem key={p.value} value={p.value}>
+                                        {p.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={errors.priority} />
+                    </div>
+
+                    <div className="space-y-1">
                         <Label>Cost Center</Label>
                         <Select value={data.cost_center_id} onValueChange={(v) => setData('cost_center_id', v)}>
-                            <SelectTrigger><SelectValue placeholder="Select cost center" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select cost center" />
+                            </SelectTrigger>
                             <SelectContent>
-                                {cost_centers.map((cc) => <SelectItem key={cc.id} value={String(cc.id)}>{cc.name}</SelectItem>)}
+                                {cost_centers.map((cc) => (
+                                    <SelectItem key={cc.id} value={String(cc.id)}>
+                                        {cc.name}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <InputError message={errors.cost_center_id} />
@@ -387,27 +542,18 @@ function TaskDialog({
                     <div className="space-y-1">
                         <Label>Vehicle</Label>
                         <Select value={data.vehicle_id} onValueChange={(v) => setData('vehicle_id', v)}>
-                            <SelectTrigger><SelectValue placeholder="Select vehicle" /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select vehicle" />
+                            </SelectTrigger>
                             <SelectContent>
                                 {vehicles.map((v) => (
                                     <SelectItem key={v.id} value={String(v.id)}>
-                                        {v.label} ({v.reg_plate})
+                                        {v.make} {v.model} ({v.reg_plate})
                                     </SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
                         <InputError message={errors.vehicle_id} />
-                    </div>
-
-                    <div className="space-y-1">
-                        <Label>Priority</Label>
-                        <Select value={data.priority} onValueChange={(v) => setData('priority', v)}>
-                            <SelectTrigger><SelectValue placeholder="Select priority" /></SelectTrigger>
-                            <SelectContent>
-                                {priorities.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <InputError message={errors.priority} />
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
@@ -420,9 +566,13 @@ function TaskDialog({
                         <InputError message={errors.due_date} />
                     </div>
 
-                    <DialogFooter className="sm:col-span-2 mt-2">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit" disabled={processing}>{processing ? 'Saving…' : editing ? 'Save Changes' : 'Add Task'}</Button>
+                    <DialogFooter className="mt-2 sm:col-span-2">
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving…' : editing ? 'Save Changes' : 'Assign Task'}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

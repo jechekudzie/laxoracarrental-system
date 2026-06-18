@@ -1,5 +1,5 @@
 import { Head, router, setLayoutProps, useForm } from '@inertiajs/react';
-import { Building2, Pencil, Phone, Plus, Search, Star, Trash2 } from 'lucide-react';
+import { Building2, Mail, MapPin, Pencil, Phone, Plus, Search, Star, Trash2, Users, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -18,6 +18,7 @@ interface Provider {
     category_label: string;
     phone: string;
     email: string | null;
+    address: string | null;
     contact_person: string | null;
     services_offered: string | null;
     rating: number | null;
@@ -33,6 +34,11 @@ interface PaginatedProviders {
     to: number;
 }
 
+interface Summary {
+    total: number;
+    active: number;
+}
+
 const CATEGORY_STYLES: Record<string, string> = {
     mechanic: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
     tow: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
@@ -44,14 +50,39 @@ const CATEGORY_STYLES: Record<string, string> = {
     other: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
 };
 
+function StarRating({ rating }: { rating: number }) {
+    const full = Math.floor(rating);
+    const half = rating - full >= 0.5;
+
+    return (
+        <div className="flex items-center gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                    key={i}
+                    className={`h-3.5 w-3.5 ${
+                        i < full
+                            ? 'fill-yellow-400 text-yellow-400'
+                            : i === full && half
+                              ? 'fill-yellow-200 text-yellow-400'
+                              : 'text-muted-foreground/30'
+                    }`}
+                />
+            ))}
+            <span className="ml-1 text-xs font-medium tabular-nums">{rating.toFixed(1)}</span>
+        </div>
+    );
+}
+
 export default function ServiceProvidersIndex({
     providers,
     filters,
     categories,
+    summary,
 }: {
     providers: PaginatedProviders;
     filters: { search?: string; category?: string };
     categories: { value: string; label: string }[];
+    summary: Summary;
 }) {
     setLayoutProps({
         breadcrumbs: [
@@ -84,19 +115,65 @@ export default function ServiceProvidersIndex({
         }
     }
 
+    const inactive = summary.total - summary.active;
+
     return (
         <>
             <Head title="Service Providers" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
-                <div className="flex items-start justify-between gap-4 flex-wrap">
+                {/* Page header */}
+                <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Service Providers</h1>
-                        <p className="text-sm text-muted-foreground">Directory of mechanics, tow companies, parts suppliers and more.</p>
+                        <p className="mt-1 text-sm text-muted-foreground">Manage external contractors and suppliers.</p>
                     </div>
-                    <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> Add Provider</Button>
+                    <Button onClick={openNew}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Provider
+                    </Button>
                 </div>
 
+                {/* Summary stat cards */}
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    <Card>
+                        <CardContent className="flex items-center gap-4 p-5">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                                <Users className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold tabular-nums">{summary.total}</p>
+                                <p className="text-xs text-muted-foreground">Total Providers</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardContent className="flex items-center gap-4 p-5">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10">
+                                <Zap className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold tabular-nums">{summary.active}</p>
+                                <p className="text-xs text-muted-foreground">Active</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="col-span-2 sm:col-span-1">
+                        <CardContent className="flex items-center gap-4 p-5">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-muted">
+                                <Building2 className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                                <p className="text-2xl font-bold tabular-nums">{inactive}</p>
+                                <p className="text-xs text-muted-foreground">Inactive</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Filter bar */}
                 <div className="flex flex-wrap items-center gap-3">
                     <form
                         onSubmit={(e) => {
@@ -105,77 +182,143 @@ export default function ServiceProvidersIndex({
                         }}
                         className="flex flex-1 gap-2"
                     >
-                        <Input placeholder="Search name, phone, contact…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-                        <Button type="submit" variant="outline" size="icon"><Search className="h-4 w-4" /></Button>
+                        <Input
+                            placeholder="Search name, phone, contact…"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="max-w-xs"
+                        />
+                        <Button type="submit" variant="outline" size="icon">
+                            <Search className="h-4 w-4" />
+                        </Button>
                     </form>
 
-                    <Select value={filters.category ?? ''} onValueChange={(v) => applyFilter({ category: v === 'all' ? '' : v })}>
-                        <SelectTrigger className="w-48"><SelectValue placeholder="All categories" /></SelectTrigger>
+                    <Select
+                        value={filters.category ?? ''}
+                        onValueChange={(v) => applyFilter({ category: v === 'all' ? '' : v })}
+                    >
+                        <SelectTrigger className="w-48">
+                            <SelectValue placeholder="All categories" />
+                        </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All categories</SelectItem>
-                            {categories.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                            {categories.map((c) => (
+                                <SelectItem key={c.value} value={c.value}>
+                                    {c.label}
+                                </SelectItem>
+                            ))}
                         </SelectContent>
                     </Select>
                 </div>
 
+                {/* Provider grid / empty state */}
                 {providers.data.length === 0 ? (
                     <Card>
-                        <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-                                <Building2 className="h-6 w-6 text-muted-foreground" />
+                        <CardContent className="flex flex-col items-center gap-3 py-20 text-center">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                                <Building2 className="h-7 w-7 text-muted-foreground" />
                             </div>
                             <p className="text-lg font-semibold">No service providers yet</p>
-                            <p className="text-sm text-muted-foreground max-w-md">Add the mechanics, tow operators, and suppliers you work with so they're ready when logging costs.</p>
-                            <Button onClick={openNew} className="mt-2"><Plus className="mr-2 h-4 w-4" /> Add your first provider</Button>
+                            <p className="max-w-sm text-sm text-muted-foreground">
+                                Add the mechanics, tow operators, and suppliers you work with so they're ready when logging costs.
+                            </p>
+                            <Button onClick={openNew} className="mt-2">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add your first provider
+                            </Button>
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                         {providers.data.map((p) => (
-                            <Card key={p.id} className="group transition-shadow hover:shadow-md">
-                                <CardContent className="p-5 space-y-4">
-                                    <div className="flex items-start justify-between">
-                                        <div className="min-w-0 flex-1">
-                                            <h3 className="font-semibold truncate">{p.name}</h3>
-                                            <span className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${CATEGORY_STYLES[p.category] ?? ''}`}>
-                                                {p.category_label}
-                                            </span>
-                                        </div>
-                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
-                                            <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(p)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                                        </div>
+                            <Card key={p.id} className="group flex flex-col transition-shadow hover:shadow-md">
+                                <CardContent className="flex flex-1 flex-col gap-4 p-5">
+                                    {/* Top: category badge + active dot */}
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span
+                                            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${CATEGORY_STYLES[p.category] ?? ''}`}
+                                        >
+                                            {p.category_label}
+                                        </span>
+                                        <span
+                                            className={`flex h-2.5 w-2.5 shrink-0 rounded-full ${p.is_active ? 'bg-emerald-500' : 'bg-muted-foreground/40'}`}
+                                            title={p.is_active ? 'Active' : 'Inactive'}
+                                        />
                                     </div>
 
-                                    <div className="space-y-1.5 text-sm">
-                                        <div className="flex items-center gap-2 text-muted-foreground">
-                                            <Phone className="h-3.5 w-3.5" />
-                                            <span>{p.phone}</span>
-                                        </div>
+                                    {/* Name + contact person */}
+                                    <div>
+                                        <h3 className="truncate font-semibold leading-snug">{p.name}</h3>
                                         {p.contact_person && (
-                                            <p className="text-xs text-muted-foreground">Contact: <span className="font-medium text-foreground">{p.contact_person}</span></p>
-                                        )}
-                                        {p.services_offered && (
-                                            <p className="text-xs text-muted-foreground line-clamp-2">{p.services_offered}</p>
+                                            <p className="mt-0.5 truncate text-xs text-muted-foreground">{p.contact_person}</p>
                                         )}
                                     </div>
 
+                                    {/* Contact details */}
+                                    <div className="flex-1 space-y-1.5 text-sm">
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <Phone className="h-3.5 w-3.5 shrink-0" />
+                                            <span className="truncate">{p.phone}</span>
+                                        </div>
+
+                                        {p.email && (
+                                            <div className="flex items-center gap-2 text-muted-foreground">
+                                                <Mail className="h-3.5 w-3.5 shrink-0" />
+                                                <span className="truncate text-xs">{p.email}</span>
+                                            </div>
+                                        )}
+
+                                        {p.address && (
+                                            <div className="flex items-start gap-2 text-muted-foreground">
+                                                <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                                <span className="line-clamp-2 text-xs">{p.address}</span>
+                                            </div>
+                                        )}
+
+                                        {p.services_offered && (
+                                            <p className="line-clamp-2 text-xs text-muted-foreground">{p.services_offered}</p>
+                                        )}
+                                    </div>
+
+                                    {/* Rating */}
                                     {p.rating != null && (
-                                        <div className="flex items-center gap-1 pt-1 border-t">
-                                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                                            <span className="text-sm font-medium">{p.rating.toFixed(1)}</span>
-                                            <span className="text-xs text-muted-foreground">/ 5</span>
+                                        <div className="border-t pt-3">
+                                            <StarRating rating={p.rating} />
                                         </div>
                                     )}
+
+                                    {/* Actions */}
+                                    <div className="flex gap-2 border-t pt-3">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="flex-1 text-xs"
+                                            onClick={() => openEdit(p)}
+                                        >
+                                            <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                                            Edit
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="text-destructive hover:text-destructive"
+                                            onClick={() => handleDelete(p)}
+                                        >
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                    </div>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
                 )}
 
+                {/* Pagination */}
                 {providers.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{providers.from}–{providers.to} of {providers.total}</span>
+                        <span>
+                            {providers.from}–{providers.to} of {providers.total}
+                        </span>
                         <div className="flex gap-1">
                             {providers.links.map((link, i) => (
                                 <Button
@@ -213,9 +356,10 @@ function ProviderDialog({
         category: editing?.category ?? 'mechanic',
         phone: editing?.phone ?? '',
         email: editing?.email ?? '',
+        address: editing?.address ?? '',
         contact_person: editing?.contact_person ?? '',
         services_offered: editing?.services_offered ?? '',
-        rating: editing?.rating ?? '',
+        rating: String(editing?.rating ?? ''),
         is_active: editing?.is_active ?? true,
         notes: '',
     });
@@ -238,7 +382,7 @@ function ProviderDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{editing ? 'Edit Provider' : 'Add Service Provider'}</DialogTitle>
                     <DialogDescription>Mechanics, tow operators, parts suppliers — anyone you pay to service vehicles.</DialogDescription>
@@ -247,16 +391,27 @@ function ProviderDialog({
                 <form onSubmit={submit} className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1 sm:col-span-2">
                         <Label htmlFor="sp-name">Name</Label>
-                        <Input id="sp-name" value={data.name} onChange={(e) => setData('name', e.target.value)} placeholder="Kudzai Auto Works" />
+                        <Input
+                            id="sp-name"
+                            value={data.name}
+                            onChange={(e) => setData('name', e.target.value)}
+                            placeholder="Kudzai Auto Works"
+                        />
                         <InputError message={errors.name} />
                     </div>
 
                     <div className="space-y-1">
                         <Label>Category</Label>
                         <Select value={data.category} onValueChange={(v) => setData('category', v)}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
                             <SelectContent>
-                                {categories.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                                {categories.map((c) => (
+                                    <SelectItem key={c.value} value={c.value}>
+                                        {c.label}
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                         <InputError message={errors.category} />
@@ -264,20 +419,46 @@ function ProviderDialog({
 
                     <div className="space-y-1">
                         <Label htmlFor="sp-phone">Phone</Label>
-                        <Input id="sp-phone" value={data.phone} onChange={(e) => setData('phone', e.target.value)} placeholder="+263 77 …" />
+                        <Input
+                            id="sp-phone"
+                            value={data.phone}
+                            onChange={(e) => setData('phone', e.target.value)}
+                            placeholder="+263 77 …"
+                        />
                         <InputError message={errors.phone} />
                     </div>
 
-                    <div className="space-y-1 sm:col-span-2">
+                    <div className="space-y-1">
                         <Label htmlFor="sp-email">Email (optional)</Label>
-                        <Input id="sp-email" type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} />
+                        <Input
+                            id="sp-email"
+                            type="email"
+                            value={data.email}
+                            onChange={(e) => setData('email', e.target.value)}
+                        />
                         <InputError message={errors.email} />
                     </div>
 
-                    <div className="space-y-1 sm:col-span-2">
+                    <div className="space-y-1">
                         <Label htmlFor="sp-contact">Contact Person</Label>
-                        <Input id="sp-contact" value={data.contact_person} onChange={(e) => setData('contact_person', e.target.value)} placeholder="Tendai Moyo" />
+                        <Input
+                            id="sp-contact"
+                            value={data.contact_person}
+                            onChange={(e) => setData('contact_person', e.target.value)}
+                            placeholder="Tendai Moyo"
+                        />
                         <InputError message={errors.contact_person} />
+                    </div>
+
+                    <div className="space-y-1 sm:col-span-2">
+                        <Label htmlFor="sp-address">Address (optional)</Label>
+                        <Input
+                            id="sp-address"
+                            value={data.address}
+                            onChange={(e) => setData('address', e.target.value)}
+                            placeholder="15 Samora Machel Ave, Harare"
+                        />
+                        <InputError message={errors.address} />
                     </div>
 
                     <div className="space-y-1 sm:col-span-2">
@@ -294,12 +475,24 @@ function ProviderDialog({
 
                     <div className="space-y-1">
                         <Label htmlFor="sp-rating">Rating (0–5)</Label>
-                        <Input id="sp-rating" type="number" step="0.1" min="0" max="5" value={data.rating} onChange={(e) => setData('rating', e.target.value)} />
+                        <Input
+                            id="sp-rating"
+                            type="number"
+                            step="0.1"
+                            min="0"
+                            max="5"
+                            value={data.rating}
+                            onChange={(e) => setData('rating', e.target.value)}
+                        />
                     </div>
 
                     <DialogFooter className="sm:col-span-2 mt-2">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                        <Button type="submit" disabled={processing}>{processing ? 'Saving…' : editing ? 'Save Changes' : 'Add Provider'}</Button>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving…' : editing ? 'Save Changes' : 'Add Provider'}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

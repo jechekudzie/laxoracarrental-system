@@ -8,17 +8,19 @@ use App\Http\Controllers\Web\CostCenterController;
 use App\Http\Controllers\Web\CustomerController;
 use App\Http\Controllers\Web\DashboardController;
 use App\Http\Controllers\Web\EmployeeController;
+use App\Http\Controllers\Web\ExpenseTemplateController;
 use App\Http\Controllers\Web\FinanceController;
 use App\Http\Controllers\Web\InvoiceController;
 use App\Http\Controllers\Web\MaintenanceController;
 use App\Http\Controllers\Web\OperationalExpenseController;
 use App\Http\Controllers\Web\PaymentController;
+use App\Http\Controllers\Web\PaymentMethodController;
 use App\Http\Controllers\Web\QuotationController;
+use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\RequisitionController;
 use App\Http\Controllers\Web\SalaryController;
 use App\Http\Controllers\Web\ServiceProviderController;
 use App\Http\Controllers\Web\VehicleController;
-use App\Http\Controllers\Web\VendorPaymentController;
 use App\Http\Controllers\Web\WorkerTaskController;
 use Illuminate\Support\Facades\Route;
 use Laravel\Fortify\Features;
@@ -99,6 +101,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Finance — Quotations
     Route::post('finance/quotations/{quotation}/status', [QuotationController::class, 'updateStatus'])->name('finance.quotations.status');
+    Route::post('finance/quotations/{quotation}/to-requisition', [QuotationController::class, 'toRequisition'])->name('finance.quotations.to-requisition');
     Route::resource('finance/quotations', QuotationController::class)
         ->parameters(['quotations' => 'quotation'])
         ->names('finance.quotations')
@@ -106,6 +109,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Finance — Requisitions
     Route::post('finance/requisitions/{requisition}/approve', [RequisitionController::class, 'approve'])->name('finance.requisitions.approve');
+    Route::post('finance/requisitions/{requisition}/to-expense', [RequisitionController::class, 'toExpense'])->name('finance.requisitions.to-expense');
     Route::post('finance/requisitions/{requisition}/reject', [RequisitionController::class, 'reject'])->name('finance.requisitions.reject');
     Route::post('finance/requisitions/{requisition}/fulfill', [RequisitionController::class, 'fulfill'])->name('finance.requisitions.fulfill');
     Route::resource('finance/requisitions', RequisitionController::class)
@@ -135,13 +139,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->names('finance.tasks')
         ->except(['create', 'show', 'edit']);
 
-    // Finance — Vendor / Service Provider Payments
-    Route::post('finance/vendor-payments/{vendorPayment}/mark-paid', [VendorPaymentController::class, 'markPaid'])->name('finance.vendor-payments.mark-paid');
-    Route::resource('finance/vendor-payments', VendorPaymentController::class)
-        ->parameters(['vendor-payments' => 'vendorPayment'])
-        ->names('finance.vendor-payments')
-        ->except(['create', 'show', 'edit']);
-
     // Compliance & Insurance (fleet-wide)
     Route::get('compliance', [ComplianceController::class, 'index'])->name('compliance.index');
 
@@ -150,6 +147,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Service Providers (mechanics, tow, car wash, etc.)
     Route::resource('service-providers', ServiceProviderController::class)->except(['create', 'show', 'edit']);
+
+    // Finance settings — Payment Methods
+    Route::resource('finance/settings/payment-methods', PaymentMethodController::class)
+        ->parameters(['payment-methods' => 'paymentMethod'])
+        ->names('finance.payment-methods')
+        ->except(['create', 'show', 'edit']);
+
+    // Finance settings — Expense Templates
+    Route::get('finance/settings/expense-templates/by-category', [ExpenseTemplateController::class, 'byCategory'])
+        ->name('finance.expense-templates.by-category');
+
+    Route::resource('finance/settings/expense-templates', ExpenseTemplateController::class)
+        ->parameters(['expense-templates' => 'expenseTemplate'])
+        ->names('finance.expense-templates')
+        ->except(['create', 'show', 'edit']);
+
+    // Reports
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [ReportController::class, 'index'])->name('index');
+        Route::get('/bookings', [ReportController::class, 'bookings'])->name('bookings');
+        Route::get('/bookings/export', [ReportController::class, 'exportBookings'])->name('bookings.export');
+        Route::get('/expenses', [ReportController::class, 'expenses'])->name('expenses');
+        Route::get('/expenses/export', [ReportController::class, 'exportExpenses'])->name('expenses.export');
+        Route::get('/hr', [ReportController::class, 'hr'])->name('hr');
+        Route::get('/hr/export', [ReportController::class, 'exportHr'])->name('hr.export');
+        Route::get('/tasks', [ReportController::class, 'tasks'])->name('tasks');
+        Route::get('/tasks/export', [ReportController::class, 'exportTasks'])->name('tasks.export');
+        Route::get('/statements/customers', [ReportController::class, 'customerStatements'])->name('statements.customers');
+        Route::get('/statements/customers/{customer}', [ReportController::class, 'customerStatement'])->name('statements.customer');
+        Route::get('/statements/customers/{customer}/pdf', [ReportController::class, 'customerStatementPdf'])->name('statements.customer.pdf');
+        Route::get('/statements/organisation', [ReportController::class, 'organisationStatement'])->name('statements.organisation');
+        Route::get('/statements/organisation/pdf', [ReportController::class, 'organisationStatementPdf'])->name('statements.organisation.pdf');
+    });
 });
 
 require __DIR__.'/settings.php';

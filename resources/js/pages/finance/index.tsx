@@ -12,7 +12,6 @@ import * as RequisitionRoutes from '@/actions/App/Http/Controllers/Web/Requisiti
 import * as ExpenseRoutes from '@/actions/App/Http/Controllers/Web/OperationalExpenseController';
 import * as SalaryRoutes from '@/actions/App/Http/Controllers/Web/SalaryController';
 import * as TaskRoutes from '@/actions/App/Http/Controllers/Web/WorkerTaskController';
-import * as VendorRoutes from '@/actions/App/Http/Controllers/Web/VendorPaymentController';
 import { dashboard } from '@/routes';
 
 interface SeriesPoint {
@@ -297,7 +296,6 @@ export default function FinanceDashboard({
                         { label: 'Expenses', icon: Wallet, href: ExpenseRoutes.index.url(), accent: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' },
                         { label: 'Salaries', icon: CircleDollarSign, href: SalaryRoutes.index.url(), accent: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' },
                         { label: 'Tasks', icon: Wrench, href: TaskRoutes.index.url(), accent: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400' },
-                        { label: 'Vendor Payments', icon: Receipt, href: VendorRoutes.index.url(), accent: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' },
                     ] as const).map(({ label, icon: Icon, href, accent }) => (
                         <Link key={label} href={href} className="group">
                             <Card className="transition-all hover:shadow-md hover:-translate-y-0.5">

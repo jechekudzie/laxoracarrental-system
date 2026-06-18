@@ -28,6 +28,8 @@ interface Salary {
     basic_salary: number;
     gross_salary: number;
     net_salary: number;
+    allowances: { label: string; amount: number }[];
+    deductions: { label: string; amount: number }[];
     status: string;
     status_label: string;
 }
@@ -298,15 +300,19 @@ function SalaryDialog({
     editing: Salary | null;
     employees: { id: number; full_name: string; employee_number: string }[];
 }) {
-    const { data, setData, post, put, processing, errors, reset } = useForm({
+    const { data, setData, processing, errors, reset } = useForm({
         employee_id: editing?.employee?.id ? String(editing.employee.id) : '',
         period_start: editing?.period_start ?? '',
         period_end: editing?.period_end ?? '',
-        basic_salary: editing?.basic_salary ?? '',
+        basic_salary: String(editing?.basic_salary ?? ''),
     });
 
-    const [allowances, setAllowances] = useState<AllowanceDeduction[]>([]);
-    const [deductions, setDeductions] = useState<AllowanceDeduction[]>([]);
+    const [allowances, setAllowances] = useState<AllowanceDeduction[]>(
+        editing?.allowances?.map((a) => ({ label: a.label, amount: String(a.amount) })) ?? []
+    );
+    const [deductions, setDeductions] = useState<AllowanceDeduction[]>(
+        editing?.deductions?.map((d) => ({ label: d.label, amount: String(d.amount) })) ?? []
+    );
 
     function addAllowance() {
         setAllowances((prev) => [...prev, { label: '', amount: '' }]);
@@ -334,27 +340,15 @@ function SalaryDialog({
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
+        const payload = { ...data, allowances, deductions };
         const options = {
             preserveScroll: true,
-            onSuccess: () => {
-                reset();
-                setAllowances([]);
-                setDeductions([]);
-                onOpenChange(false);
-            },
+            onSuccess: () => { reset(); setAllowances([]); setDeductions([]); onOpenChange(false); },
         };
         if (editing) {
-            put(Routes.update.url({ salary: editing.id }), options);
+            router.put(Routes.update.url({ salary: editing.id }), payload, options);
         } else {
-            router.post(Routes.store.url(), { ...data, allowances, deductions }, {
-                preserveScroll: true,
-                onSuccess: () => {
-                    reset();
-                    setAllowances([]);
-                    setDeductions([]);
-                    onOpenChange(false);
-                },
-            });
+            router.post(Routes.store.url(), payload, options);
         }
     }
 

@@ -1,5 +1,5 @@
 import { Head, Link, router, setLayoutProps } from '@inertiajs/react';
-import { FileText, Plus, Search, Trash2 } from 'lucide-react';
+import { CheckCircle2, FileText, Plus, Search, Send, Trash2, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -33,6 +33,13 @@ interface Quotation {
     currency: string;
 }
 
+interface Summary {
+    total: number;
+    sent: number;
+    accepted: number;
+    total_value: number;
+}
+
 const STATUS_STYLES: Record<string, string> = {
     draft: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
     sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -49,14 +56,45 @@ function fmtDate(d: string) {
     return new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function StatCard({
+    label,
+    value,
+    icon: Icon,
+    accent,
+    sub,
+}: {
+    label: string;
+    value: string;
+    icon: React.ComponentType<{ className?: string }>;
+    accent: string;
+    sub?: string;
+}) {
+    return (
+        <Card>
+            <CardContent className="flex items-start justify-between gap-4 p-5">
+                <div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+                    <p className="mt-1 text-2xl font-bold">{value}</p>
+                    {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
+                </div>
+                <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${accent}`}>
+                    <Icon className="h-6 w-6" />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function QuotationsIndex({
     quotations,
     filters,
     statuses,
+    summary,
 }: {
     quotations: PaginatedData<Quotation>;
     filters: { search?: string; status?: string };
     statuses: { value: string; label: string }[];
+    summary: Summary;
 }) {
     setLayoutProps({
         breadcrumbs: [
@@ -89,6 +127,7 @@ export default function QuotationsIndex({
             <Head title="Quotations" />
 
             <div className="flex flex-1 flex-col gap-6 p-6">
+                {/* Page header */}
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Quotations</h1>
@@ -101,6 +140,39 @@ export default function QuotationsIndex({
                     </Button>
                 </div>
 
+                {/* Summary stat cards */}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard
+                        label="Total Quotations"
+                        value={String(summary.total)}
+                        icon={FileText}
+                        accent="bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400"
+                        sub="All time"
+                    />
+                    <StatCard
+                        label="Pending / Sent"
+                        value={String(summary.sent)}
+                        icon={Send}
+                        accent="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                        sub="Draft and sent"
+                    />
+                    <StatCard
+                        label="Accepted"
+                        value={String(summary.accepted)}
+                        icon={CheckCircle2}
+                        accent="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                        sub="Confirmed by customer"
+                    />
+                    <StatCard
+                        label="Total Value"
+                        value={fmt(summary.total_value)}
+                        icon={TrendingUp}
+                        accent="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400"
+                        sub="Sum of all quotations"
+                    />
+                </div>
+
+                {/* Filters */}
                 <div className="flex flex-wrap items-center gap-3">
                     <form
                         onSubmit={(e) => {
@@ -110,7 +182,7 @@ export default function QuotationsIndex({
                         className="flex flex-1 gap-2"
                     >
                         <Input
-                            placeholder="Search quotations…"
+                            placeholder="Search by number or subject…"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="max-w-xs"
@@ -138,13 +210,14 @@ export default function QuotationsIndex({
                     </Select>
                 </div>
 
+                {/* Table or empty state */}
                 {quotations.data.length === 0 ? (
                     <Card>
                         <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
                             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
                                 <FileText className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <p className="text-lg font-semibold">No quotations yet</p>
+                            <p className="text-lg font-semibold">No quotations found</p>
                             <p className="max-w-md text-sm text-muted-foreground">
                                 Create a quotation to send a formal proposal to your customers.
                             </p>
@@ -162,8 +235,7 @@ export default function QuotationsIndex({
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b bg-muted/40 text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                                            <th className="px-4 py-3">#</th>
-                                            <th className="px-4 py-3">Subject</th>
+                                            <th className="px-4 py-3">Quotation</th>
                                             <th className="px-4 py-3">Customer</th>
                                             <th className="px-4 py-3">Issued</th>
                                             <th className="px-4 py-3">Valid Until</th>
@@ -175,23 +247,27 @@ export default function QuotationsIndex({
                                     <tbody className="divide-y">
                                         {quotations.data.map((q) => (
                                             <tr key={q.id} className="transition-colors hover:bg-muted/30">
-                                                <td className="px-4 py-3 font-mono text-xs">
+                                                <td className="px-4 py-3">
                                                     <Link
                                                         href={Routes.show.url({ quotation: q.id })}
-                                                        className="font-medium text-primary hover:underline"
+                                                        className="font-mono text-xs font-bold text-primary hover:underline"
                                                     >
                                                         {q.number}
                                                     </Link>
-                                                </td>
-                                                <td className="px-4 py-3">
-                                                    <span className="font-medium">{q.subject}</span>
+                                                    {q.subject && (
+                                                        <p className="mt-0.5 text-xs text-muted-foreground">{q.subject}</p>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3 text-muted-foreground">
                                                     {q.customer?.name ?? <span className="italic">No customer</span>}
                                                 </td>
-                                                <td className="px-4 py-3 text-muted-foreground">{fmtDate(q.issued_at)}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">{fmtDate(q.valid_until)}</td>
-                                                <td className="px-4 py-3 text-right font-semibold">
+                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                                                    {fmtDate(q.issued_at)}
+                                                </td>
+                                                <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                                                    {fmtDate(q.valid_until)}
+                                                </td>
+                                                <td className="px-4 py-3 text-right font-semibold whitespace-nowrap">
                                                     {fmt(q.total, q.currency)}
                                                 </td>
                                                 <td className="px-4 py-3">
@@ -220,6 +296,7 @@ export default function QuotationsIndex({
                     </Card>
                 )}
 
+                {/* Pagination */}
                 {quotations.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>
@@ -241,13 +318,21 @@ export default function QuotationsIndex({
                 )}
             </div>
 
+            {/* Delete confirmation dialog */}
             <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Delete Quotation</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to delete quotation{' '}
-                            <span className="font-semibold">{deleteTarget?.number}</span>? This action cannot be undone.
+                            <span className="font-semibold">{deleteTarget?.number}</span>
+                            {deleteTarget?.subject ? (
+                                <>
+                                    {' '}
+                                    &mdash; <span className="text-foreground">{deleteTarget.subject}</span>
+                                </>
+                            ) : null}
+                            ? This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

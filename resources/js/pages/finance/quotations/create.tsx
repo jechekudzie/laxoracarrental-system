@@ -1,14 +1,16 @@
-import { Head, Link, router, setLayoutProps, useForm } from '@inertiajs/react';
-import { Plus, X } from 'lucide-react';
-import { useState } from 'react';
+import { Head, Link, router, setLayoutProps, useForm, usePage } from '@inertiajs/react';
+import { Plus, UserPlus, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { DateInput } from '@/components/ui/date-input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import InputError from '@/components/input-error';
 import * as Routes from '@/actions/App/Http/Controllers/Web/QuotationController';
+import * as CustomerRoutes from '@/actions/App/Http/Controllers/Web/CustomerController';
 import { dashboard } from '@/routes';
 import { index as financeIndex } from '@/routes/finance';
 
@@ -19,15 +21,139 @@ interface LineItem {
     unit_price: number;
 }
 
-const DEFAULT_LINE_ITEM: LineItem = {
-    description: '',
-    quantity: 1,
-    unit: '',
-    unit_price: 0,
-};
+const DEFAULT_LINE_ITEM: LineItem = { description: '', quantity: 1, unit: '', unit_price: 0 };
 
 function fmt(amount: number) {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+}
+
+function QuickAddCustomerDialog({
+    open,
+    onClose,
+}: {
+    open: boolean;
+    onClose: () => void;
+}) {
+    const { data, setData, processing, errors, reset } = useForm({
+        name: '',
+        id_number: '',
+        phone: '',
+        email: '',
+        licence_number: '',
+        licence_class: '',
+        licence_expiry: '',
+    });
+
+    function submit(e: React.FormEvent) {
+        e.preventDefault();
+        router.post(CustomerRoutes.quickStore.url(), data, {
+            preserveState: true,
+            onSuccess: () => {
+                reset();
+                onClose();
+            },
+        });
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={(v) => { if (!v) { reset(); onClose(); } }}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                    <DialogTitle>Add New Customer</DialogTitle>
+                    <DialogDescription>
+                        Create a customer record to attach to this quotation.
+                    </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={submit} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-1 sm:col-span-2">
+                            <Label htmlFor="cq-name">Full Name *</Label>
+                            <Input
+                                id="cq-name"
+                                value={data.name}
+                                onChange={(e) => setData('name', e.target.value)}
+                                placeholder="John Doe"
+                            />
+                            <InputError message={errors.name} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="cq-phone">Phone *</Label>
+                            <Input
+                                id="cq-phone"
+                                value={data.phone}
+                                onChange={(e) => setData('phone', e.target.value)}
+                                placeholder="+263 77 123 4567"
+                            />
+                            <InputError message={errors.phone} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="cq-email">Email</Label>
+                            <Input
+                                id="cq-email"
+                                type="email"
+                                value={data.email}
+                                onChange={(e) => setData('email', e.target.value)}
+                                placeholder="john@example.com"
+                            />
+                            <InputError message={errors.email} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="cq-idnum">ID Number *</Label>
+                            <Input
+                                id="cq-idnum"
+                                value={data.id_number}
+                                onChange={(e) => setData('id_number', e.target.value)}
+                            />
+                            <InputError message={errors.id_number} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="cq-licence">Licence Number *</Label>
+                            <Input
+                                id="cq-licence"
+                                value={data.licence_number}
+                                onChange={(e) => setData('licence_number', e.target.value)}
+                            />
+                            <InputError message={errors.licence_number} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="cq-class">Licence Class *</Label>
+                            <Input
+                                id="cq-class"
+                                value={data.licence_class}
+                                onChange={(e) => setData('licence_class', e.target.value)}
+                                placeholder="e.g. Class 4"
+                            />
+                            <InputError message={errors.licence_class} />
+                        </div>
+
+                        <div className="space-y-1">
+                            <Label htmlFor="cq-expiry">Licence Expiry *</Label>
+                            <DateInput
+                                id="cq-expiry"
+                                value={data.licence_expiry}
+                                onChange={(e) => setData('licence_expiry', e.target.value)}
+                            />
+                            <InputError message={errors.licence_expiry} />
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button type="button" variant="outline" onClick={() => { reset(); onClose(); }}>
+                            Cancel
+                        </Button>
+                        <Button type="submit" disabled={processing}>
+                            {processing ? 'Saving…' : 'Add Customer'}
+                        </Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 export default function QuotationCreate({
@@ -48,6 +174,9 @@ export default function QuotationCreate({
         ],
     });
 
+    const page = usePage<{ flash?: Record<string, unknown> }>();
+    const flash = page.props.flash ?? {};
+
     const { data, setData, errors, processing } = useForm({
         number: next_number,
         customer_id: '',
@@ -62,6 +191,15 @@ export default function QuotationCreate({
     });
 
     const [lineItems, setLineItems] = useState<LineItem[]>([{ ...DEFAULT_LINE_ITEM }]);
+    const [addCustomerOpen, setAddCustomerOpen] = useState(false);
+
+    // Auto-select newly created customer
+    useEffect(() => {
+        const newId = flash?.new_customer_id;
+        if (newId) {
+            setData('customer_id', String(newId));
+        }
+    }, [flash?.new_customer_id]);
 
     function addLineItem() {
         setLineItems((prev) => [...prev, { ...DEFAULT_LINE_ITEM }]);
@@ -81,10 +219,7 @@ export default function QuotationCreate({
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        router.post(Routes.store.url(), {
-            ...data,
-            items: lineItems,
-        });
+        router.post(Routes.store.url(), { ...data, items: lineItems });
     }
 
     return (
@@ -103,7 +238,6 @@ export default function QuotationCreate({
                 </div>
 
                 <form onSubmit={submit} className="flex flex-col gap-6">
-                    {/* Header fields */}
                     <div className="grid gap-6 lg:grid-cols-3">
                         <Card className="lg:col-span-2">
                             <CardHeader>
@@ -121,23 +255,35 @@ export default function QuotationCreate({
                                     <InputError message={errors.number} />
                                 </div>
 
+                                {/* Customer with quick-add */}
                                 <div className="space-y-1">
                                     <Label>Customer</Label>
-                                    <Select
-                                        value={data.customer_id}
-                                        onValueChange={(v) => setData('customer_id', v)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select customer" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {customers.map((c) => (
-                                                <SelectItem key={c.id} value={String(c.id)}>
-                                                    {c.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <div className="flex gap-2">
+                                        <Select
+                                            value={data.customer_id}
+                                            onValueChange={(v) => setData('customer_id', v)}
+                                        >
+                                            <SelectTrigger className="flex-1">
+                                                <SelectValue placeholder="Select customer" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {customers.map((c) => (
+                                                    <SelectItem key={c.id} value={String(c.id)}>
+                                                        {c.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            onClick={() => setAddCustomerOpen(true)}
+                                            title="Add new customer"
+                                        >
+                                            <UserPlus className="h-4 w-4" />
+                                        </Button>
+                                    </div>
                                     <InputError message={errors.customer_id} />
                                 </div>
 
@@ -328,11 +474,7 @@ export default function QuotationCreate({
                                                         step="0.01"
                                                         value={item.unit_price}
                                                         onChange={(e) =>
-                                                            updateLineItem(
-                                                                i,
-                                                                'unit_price',
-                                                                parseFloat(e.target.value) || 0,
-                                                            )
+                                                            updateLineItem(i, 'unit_price', parseFloat(e.target.value) || 0)
                                                         }
                                                     />
                                                 </td>
@@ -369,6 +511,8 @@ export default function QuotationCreate({
                     </Card>
                 </form>
             </div>
+
+            <QuickAddCustomerDialog open={addCustomerOpen} onClose={() => setAddCustomerOpen(false)} />
         </>
     );
 }

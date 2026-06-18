@@ -13,6 +13,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CostCenter;
 use App\Models\Employee;
 use App\Models\OperationalExpense;
+use App\Models\PaymentMethod as PaymentMethodModel;
 use App\Models\ServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,11 +40,15 @@ class OperationalExpenseController extends Controller
                 'id' => $e->id,
                 'description' => $e->description,
                 'reference_number' => $e->reference_number,
+                'provider_invoice_number' => $e->provider_invoice_number,
                 'category' => $e->category->value,
                 'category_label' => $e->category->label(),
                 'amount' => (float) $e->amount,
                 'currency' => $e->currency->value,
                 'expense_date' => $e->expense_date?->toDateString(),
+                'invoice_date' => $e->invoice_date?->toDateString(),
+                'due_date' => $e->due_date?->toDateString(),
+                'is_overdue' => $e->due_date && $e->due_date->isPast() && ! in_array($e->status->value, ['paid']),
                 'status' => $e->status->value,
                 'status_label' => $e->status->label(),
                 'status_color' => $e->status->color(),
@@ -85,7 +90,7 @@ class OperationalExpenseController extends Controller
             'cost_centers' => CostCenter::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'employees' => Employee::where('is_active', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']),
             'service_providers' => ServiceProvider::where('is_active', true)->orderBy('name')->get(['id', 'name', 'category']),
-            'payment_methods' => collect(PaymentMethod::cases())->map(fn ($m) => ['value' => $m->value, 'label' => ucfirst(str_replace('_', ' ', $m->value))]),
+            'payment_methods' => PaymentMethodModel::where('is_active', true)->orderBy('sort_order')->get(['id', 'name', 'code'])->map(fn ($m) => ['value' => $m->code, 'label' => $m->name]),
         ]);
     }
 
@@ -96,11 +101,14 @@ class OperationalExpenseController extends Controller
             'incurred_by' => ['nullable', 'exists:employees,id'],
             'service_provider_id' => ['nullable', 'exists:service_providers,id'],
             'reference_number' => ['nullable', 'string', 'max:60'],
+            'provider_invoice_number' => ['nullable', 'string', 'max:60'],
             'category' => ['required', Rule::enum(ExpenseCategory::class)],
             'description' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'currency' => ['nullable', Rule::enum(Currency::class)],
             'expense_date' => ['required', 'date'],
+            'invoice_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date'],
             'payment_method' => ['nullable', Rule::enum(PaymentMethod::class)],
             'receipt_number' => ['nullable', 'string', 'max:60'],
             'notes' => ['nullable', 'string'],
@@ -131,11 +139,14 @@ class OperationalExpenseController extends Controller
             'incurred_by' => ['nullable', 'exists:employees,id'],
             'service_provider_id' => ['nullable', 'exists:service_providers,id'],
             'reference_number' => ['nullable', 'string', 'max:60'],
+            'provider_invoice_number' => ['nullable', 'string', 'max:60'],
             'category' => ['required', Rule::enum(ExpenseCategory::class)],
             'description' => ['required', 'string', 'max:255'],
             'amount' => ['required', 'numeric', 'min:0.01'],
             'currency' => ['nullable', Rule::enum(Currency::class)],
             'expense_date' => ['required', 'date'],
+            'invoice_date' => ['nullable', 'date'],
+            'due_date' => ['nullable', 'date'],
             'payment_method' => ['nullable', Rule::enum(PaymentMethod::class)],
             'receipt_number' => ['nullable', 'string', 'max:60'],
             'status' => ['nullable', Rule::enum(ExpenseStatus::class)],

@@ -56,6 +56,12 @@ class WorkerTaskController extends Controller
             'employees' => Employee::where('is_active', true)->orderBy('first_name')->get(['id', 'first_name', 'last_name']),
             'cost_centers' => CostCenter::where('is_active', true)->orderBy('name')->get(['id', 'name']),
             'vehicles' => Vehicle::orderBy('make')->get(['id', 'make', 'model', 'reg_plate']),
+            'summary' => [
+                'total' => WorkerTask::count(),
+                'pending' => WorkerTask::where('status', 'pending')->count(),
+                'in_progress' => WorkerTask::where('status', 'in_progress')->count(),
+                'completed' => WorkerTask::where('status', 'completed')->count(),
+            ],
         ]);
     }
 

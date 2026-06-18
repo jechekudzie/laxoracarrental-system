@@ -33,6 +33,7 @@ class ServiceProviderController extends Controller
                 'category_label' => $p->category->label(),
                 'phone' => $p->phone,
                 'email' => $p->email,
+                'address' => $p->address,
                 'contact_person' => $p->contact_person,
                 'services_offered' => $p->services_offered,
                 'rating' => $p->rating ? (float) $p->rating : null,
@@ -43,6 +44,10 @@ class ServiceProviderController extends Controller
             'providers' => $providers,
             'filters' => $request->only('search', 'category'),
             'categories' => collect(ServiceProviderCategory::cases())->map(fn ($e) => ['value' => $e->value, 'label' => $e->label()]),
+            'summary' => [
+                'total' => ServiceProvider::count(),
+                'active' => ServiceProvider::where('is_active', true)->count(),
+            ],
         ]);
     }
 

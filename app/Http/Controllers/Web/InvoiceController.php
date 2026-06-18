@@ -44,6 +44,12 @@ class InvoiceController extends Controller
             'invoices' => $invoices,
             'filters' => $request->only('search', 'status'),
             'statuses' => collect(InvoiceStatus::cases())->map(fn ($e) => ['value' => $e->value, 'label' => ucfirst(str_replace('_', ' ', $e->value))]),
+            'summary' => [
+                'total' => Invoice::count(),
+                'outstanding' => (float) Invoice::whereNotIn('status', ['paid', 'cancelled'])->sum('total'),
+                'paid_this_month' => (float) Invoice::where('status', 'paid')->whereMonth('updated_at', now()->month)->sum('total'),
+                'overdue' => Invoice::where('status', 'overdue')->count(),
+            ],
         ]);
     }
 

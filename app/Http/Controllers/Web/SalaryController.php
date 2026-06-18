@@ -41,6 +41,8 @@ class SalaryController extends Controller
                 'basic_salary' => (float) $s->basic_salary,
                 'gross_salary' => (float) $s->gross_salary,
                 'net_salary' => (float) $s->net_salary,
+                'allowances' => $s->allowances ?? [],
+                'deductions' => $s->deductions ?? [],
                 'status' => $s->status->value,
                 'status_label' => $s->status->label(),
                 'status_color' => $s->status->color(),
@@ -78,6 +80,26 @@ class SalaryController extends Controller
         ]);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Salary record created.']);
+
+        return back();
+    }
+
+    public function update(Request $request, Salary $salary): RedirectResponse
+    {
+        $data = $this->validateSalary($request);
+
+        $allowancesTotal = collect($data['allowances'] ?? [])->sum('amount');
+        $deductionsTotal = collect($data['deductions'] ?? [])->sum('amount');
+        $gross = $data['basic_salary'] + $allowancesTotal;
+        $net = $gross - $deductionsTotal;
+
+        $salary->update([
+            ...$data,
+            'gross_salary' => $gross,
+            'net_salary' => $net,
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Salary record updated.']);
 
         return back();
     }

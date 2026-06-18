@@ -10,6 +10,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Quotation;
 use App\Models\QuotationItem;
+use App\Models\Requisition;
+use App\Models\RequisitionItem;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -48,6 +50,12 @@ class QuotationController extends Controller
             'quotations' => $quotations,
             'filters' => $request->only('search', 'status'),
             'statuses' => collect(QuotationStatus::cases())->map(fn ($s) => ['value' => $s->value, 'label' => $s->label()]),
+            'summary' => [
+                'total' => Quotation::count(),
+                'sent' => Quotation::whereIn('status', ['sent', 'draft'])->count(),
+                'accepted' => Quotation::where('status', 'accepted')->count(),
+                'total_value' => (float) Quotation::sum('total'),
+            ],
         ]);
     }
 
@@ -131,6 +139,47 @@ class QuotationController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Status updated.']);
 
         return back();
+    }
+
+    public function toRequisition(Quotation $quotation): RedirectResponse
+    {
+        $quotation->load('items');
+
+        $requisition = DB::transaction(function () use ($quotation) {
+            $year = now()->format('Y');
+            $count = Requisition::withTrashed()->where('number', 'like', "REQ-{$year}-%")->count();
+            $number = 'REQ-'.$year.'-'.str_pad((string) ($count + 1), 4, '0', STR_PAD_LEFT);
+
+            $totalEstimated = $quotation->items->sum(fn ($i) => $i->quantity * $i->unit_price);
+
+            $requisition = Requisition::create([
+                'number' => $number,
+                'title' => $quotation->subject,
+                'description' => $quotation->notes,
+                'required_by' => now()->addDays(30)->toDateString(),
+                'status' => 'pending',
+                'priority' => 'medium',
+                'requested_by' => auth()->id(),
+                'total_estimated' => $totalEstimated,
+            ]);
+
+            foreach ($quotation->items as $item) {
+                RequisitionItem::create([
+                    'requisition_id' => $requisition->id,
+                    'description' => $item->description,
+                    'quantity' => $item->quantity,
+                    'unit' => $item->unit,
+                    'unit_price_estimated' => $item->unit_price,
+                    'total_estimated' => $item->quantity * $item->unit_price,
+                ]);
+            }
+
+            return $requisition;
+        });
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Requisition {$requisition->number} created from quotation."]);
+
+        return redirect()->route('finance.requisitions.show', $requisition);
     }
 
     public function destroy(Quotation $quotation): RedirectResponse
