@@ -8,7 +8,16 @@
       "Bash(xargs -I {} sh -c 'echo \"=== {} ===\" && grep \"public function\" {}')",
       "Bash(git init *)",
       "Bash(git remote *)",
-      "Bash(git branch *)"
+      "Bash(git branch *)",
+      "Bash(git commit -m ' *)",
+      "mcp__laravel-boost__database-query",
+      "Bash(grep -v \"^\\\\s*$\")",
+      "Bash(awk '{print $2, $3}')",
+      "Bash(grep -v \"^$\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in {**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}.items\\(\\) if any\\(x in k.lower\\(\\) for x in ['chart','recharts','d3','apex','victory','plot']\\)]\")",
+      "Bash(vendor/bin/pint --dirty --format agent app/Http/Controllers/Web/ReportController.php)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(k,v\\) for k,v in {**d.get\\('require',{}\\), **d.get\\('require-dev',{}\\)}.items\\(\\) if any\\(x in k.lower\\(\\) for x in ['excel','pdf','dompdf','spreadsheet','csv','maatwebsite','snappy','tcpdf']\\)]\")",
+      "Bash(git rm *)"
     ]
   }
 }
