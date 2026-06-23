@@ -15,27 +15,24 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
         <div className="relative grid h-dvh flex-col items-center justify-center lg:max-w-none lg:grid-cols-2 lg:px-0">
             {/* Left panel */}
             <div className="relative hidden h-full flex-col overflow-hidden lg:flex">
-                {/* Gradient background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950" />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1208 60%, #2a1e08 100%)' }} />
 
-                {/* Subtle grid pattern */}
+                {/* Subtle grid */}
                 <div
-                    className="absolute inset-0 opacity-[0.04]"
+                    className="absolute inset-0 opacity-[0.05]"
                     style={{
-                        backgroundImage:
-                            'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+                        backgroundImage: 'linear-gradient(rgba(194,148,63,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(194,148,63,0.4) 1px, transparent 1px)',
                         backgroundSize: '40px 40px',
                     }}
                 />
 
-                {/* Accent circles */}
-                <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
-                <div className="absolute -bottom-32 -right-16 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl" />
+                {/* Glow accents */}
+                <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full blur-3xl" style={{ background: 'rgba(194,148,63,0.12)' }} />
+                <div className="absolute -bottom-32 right-0 h-80 w-80 rounded-full blur-3xl" style={{ background: 'rgba(194,148,63,0.08)' }} />
 
                 {/* Content */}
                 <div className="relative z-10 flex h-full flex-col p-12">
-                    {/* Logo */}
-                    <Link href={home()} className="flex items-center gap-3">
+                    <Link href={home()}>
                         <img
                             src="/brand_assets/Wordmark.svg"
                             alt="Laxora Car Rental"
@@ -43,25 +40,26 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
                         />
                     </Link>
 
-                    {/* Hero text */}
                     <div className="mt-auto">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-indigo-400">
+                        <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#c2943f' }}>
                             Fleet Management Platform
                         </p>
                         <h2 className="mt-3 text-4xl font-bold leading-tight text-white">
                             Drive your business
                             <br />
-                            <span className="text-indigo-400">forward.</span>
+                            <span style={{ color: '#c2943f' }}>forward.</span>
                         </h2>
-                        <p className="mt-4 text-base leading-relaxed text-slate-400">
+                        <p className="mt-4 text-base leading-relaxed text-stone-400">
                             Everything you need to run a modern car rental operation — bookings, fleet, finance, and reports — in one place.
                         </p>
 
-                        {/* Feature list */}
                         <ul className="mt-8 space-y-3">
                             {features.map(({ icon: Icon, text }) => (
-                                <li key={text} className="flex items-center gap-3 text-sm text-slate-300">
-                                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-indigo-400">
+                                <li key={text} className="flex items-center gap-3 text-sm text-stone-300">
+                                    <span
+                                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                                        style={{ background: 'rgba(194,148,63,0.15)', color: '#c2943f' }}
+                                    >
                                         <Icon className="h-3.5 w-3.5" />
                                     </span>
                                     {text}
@@ -70,16 +68,14 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
                         </ul>
                     </div>
 
-                    {/* Footer */}
-                    <p className="mt-12 text-xs text-slate-600">
+                    <p className="mt-12 text-xs text-stone-700">
                         © {new Date().getFullYear()} Laxora Car Rental. All rights reserved.
                     </p>
                 </div>
             </div>
 
-            {/* Right panel — form */}
+            {/* Right panel */}
             <div className="flex h-full w-full flex-col items-center justify-center px-8 py-12 lg:px-16">
-                {/* Mobile logo */}
                 <Link href={home()} className="mb-8 lg:hidden">
                     <img
                         src="/brand_assets/Wordmark.svg"
