@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import {
     BarChart3,
     CalendarDays,
@@ -39,6 +40,50 @@ const stats = [
     { value: 'PDF + CSV', label: 'Export-ready reports' },
     { value: 'Multi-role', label: 'Team access control' },
 ];
+
+const TAGLINE = 'Where every ride feels first class.';
+
+function TypewriterText() {
+    const [displayed, setDisplayed] = useState('');
+    const [showCursor, setShowCursor] = useState(true);
+    const [done, setDone] = useState(false);
+
+    useEffect(() => {
+        let i = 0;
+        const type = setInterval(() => {
+            i++;
+            setDisplayed(TAGLINE.slice(0, i));
+            if (i >= TAGLINE.length) {
+                clearInterval(type);
+                setDone(true);
+            }
+        }, 45);
+        return () => clearInterval(type);
+    }, []);
+
+    useEffect(() => {
+        if (!done) return;
+        const blink = setInterval(() => setShowCursor((c) => !c), 530);
+        return () => clearInterval(blink);
+    }, [done]);
+
+    return (
+        <span style={{ color: GOLD }}>
+            {displayed}
+            <span
+                className="ml-0.5 inline-block w-[3px] rounded-sm align-middle"
+                style={{
+                    height: '0.85em',
+                    background: GOLD,
+                    opacity: showCursor ? 1 : 0,
+                    transition: 'opacity 0.1s',
+                    verticalAlign: 'middle',
+                    marginBottom: '0.1em',
+                }}
+            />
+        </span>
+    );
+}
 
 export default function Welcome({ canRegister = true }: { canRegister?: boolean }) {
     const { auth } = usePage<{ auth: { user: unknown } }>().props;
@@ -114,9 +159,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                             Fleet Management Platform
                         </span>
                         <h1 className="mt-6 text-5xl font-extrabold leading-tight tracking-tight text-white sm:text-6xl lg:text-7xl">
-                            Run your car rental
-                            <br />
-                            <span style={{ color: GOLD }}>the smart way.</span>
+                            <TypewriterText />
                         </h1>
                         <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-stone-400">
                             Laxora brings your entire operation together — fleet, bookings, customers, finance, and reporting — in one clean, modern platform.
