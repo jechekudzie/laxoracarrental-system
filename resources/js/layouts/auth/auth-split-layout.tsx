@@ -33,11 +33,13 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
                 {/* Content */}
                 <div className="relative z-10 flex h-full flex-col p-12">
                     <Link href={home()}>
-                        <img
-                            src="/brand_assets/Wordmark.svg"
-                            alt="Laxora Car Rental"
-                            className="h-9 w-auto brightness-0 invert"
-                        />
+                        <div className="inline-block rounded-xl bg-white/95 px-4 py-2 shadow-sm">
+                            <img
+                                src="/logo.jpg"
+                                alt="Laxora Car Rental"
+                                className="h-10 w-auto object-contain"
+                            />
+                        </div>
                     </Link>
 
                     <div className="mt-auto">
@@ -78,9 +80,9 @@ export default function AuthSplitLayout({ children, title, description }: AuthLa
             <div className="flex h-full w-full flex-col items-center justify-center px-8 py-12 lg:px-16">
                 <Link href={home()} className="mb-8 lg:hidden">
                     <img
-                        src="/brand_assets/Wordmark.svg"
+                        src="/logo.jpg"
                         alt="Laxora Car Rental"
-                        className="h-8 w-auto dark:invert"
+                        className="h-10 w-auto object-contain"
                     />
                 </Link>
 

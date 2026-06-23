@@ -52,10 +52,20 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
             <div className="min-h-screen bg-white text-slate-900 dark:bg-[#0a0a0a] dark:text-slate-100">
 
                 {/* ── Nav ── */}
-                <header className="sticky top-0 z-50 border-b border-stone-100 bg-white/90 backdrop-blur dark:border-stone-900 dark:bg-[#0a0a0a]/90">
+                <header className="sticky top-0 z-50 border-b border-stone-100 bg-white/95 backdrop-blur-md dark:border-stone-900 dark:bg-[#0a0a0a]/95">
                     <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                        <img src="/brand_assets/Wordmark.svg" alt="Laxora Car Rental" className="h-7 w-auto dark:invert" />
-                        <nav className="flex items-center gap-3">
+                        <a href="#" className="flex-shrink-0">
+                            <img src="/logo.jpg" alt="Laxora Car Rental" className="h-10 w-auto object-contain" />
+                        </a>
+
+                        {/* Desktop nav links */}
+                        <nav className="hidden items-center gap-6 md:flex">
+                            <a href="#features" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">Features</a>
+                            <a href="#how-it-works" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">How it works</a>
+                            <a href="#modules" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">Modules</a>
+                        </nav>
+
+                        <div className="flex items-center gap-3">
                             {auth.user ? (
                                 <Link
                                     href={dashboard()}
@@ -68,7 +78,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                 <>
                                     <Link
                                         href={login()}
-                                        className="text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white"
+                                        className="hidden text-sm font-medium text-stone-600 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white sm:inline"
                                     >
                                         Sign in
                                     </Link>
@@ -81,7 +91,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                     </Link>
                                 </>
                             )}
-                        </nav>
+                        </div>
                     </div>
                 </header>
 
@@ -134,7 +144,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 </section>
 
                 {/* ── Features ── */}
-                <section className="py-24">
+                <section id="features" className="py-24">
                     <div className="mx-auto max-w-6xl px-6">
                         <div className="text-center">
                             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: GOLD }}>Everything you need</p>
@@ -166,7 +176,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 </section>
 
                 {/* ── How it works ── */}
-                <section className="border-t border-stone-100 bg-stone-50 py-24 dark:border-stone-900 dark:bg-stone-950">
+                <section id="how-it-works" className="border-t border-stone-100 bg-stone-50 py-24 dark:border-stone-900 dark:bg-stone-950">
                     <div className="mx-auto max-w-6xl px-6">
                         <div className="text-center">
                             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: GOLD }}>How it works</p>
@@ -186,7 +196,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 </section>
 
                 {/* ── Module highlights ── */}
-                <section className="py-24">
+                <section id="modules" className="py-24">
                     <div className="mx-auto max-w-6xl px-6">
                         <div className="grid gap-6 sm:grid-cols-3">
                             {[
@@ -245,7 +255,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 {/* ── Footer ── */}
                 <footer className="border-t border-stone-100 py-10 dark:border-stone-900">
                     <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 sm:flex-row">
-                        <img src="/brand_assets/Wordmark.svg" alt="Laxora Car Rental" className="h-6 w-auto opacity-50 dark:invert" />
+                        <img src="/logo.jpg" alt="Laxora Car Rental" className="h-8 w-auto object-contain opacity-70" />
                         <p className="text-xs text-stone-400">
                             © {new Date().getFullYear()} Laxora Car Rental. All rights reserved.
                         </p>

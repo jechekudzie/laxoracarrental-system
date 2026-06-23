@@ -15,9 +15,18 @@ interface Branding {
 export default function AppLogo() {
     const { branding } = usePage<{ branding: Branding }>().props;
 
+    if (branding.logo_wordmark) {
+        return (
+            <img
+                src={branding.logo_wordmark}
+                alt={branding.name}
+                className="h-9 w-auto max-w-[160px] object-contain"
+            />
+        );
+    }
+
     return (
         <>
-            {/* Icon: brand SVG or fallback gradient letter */}
             {branding.logo_icon ? (
                 <img
                     src={branding.logo_icon}
@@ -35,28 +44,19 @@ export default function AppLogo() {
                 </div>
             )}
 
-            {/* Wordmark image or fallback text */}
-            {branding.logo_wordmark ? (
-                <img
-                    src={branding.logo_wordmark}
-                    alt={branding.name}
-                    className="ml-1 h-12 w-auto max-w-[180px] object-contain"
-                />
-            ) : (
-                <div className="ml-1 grid flex-1 text-left">
-                    <span className="truncate text-sm font-bold leading-tight tracking-tight">
-                        {branding.name}
-                        {branding.subtitle && (
-                            <span className="ml-1 font-normal opacity-80">{branding.subtitle}</span>
-                        )}
-                    </span>
-                    {branding.tagline && (
-                        <span className="truncate text-[9px] uppercase tracking-widest opacity-60">
-                            {branding.tagline}
-                        </span>
+            <div className="ml-1 grid flex-1 text-left">
+                <span className="truncate text-sm font-bold leading-tight tracking-tight">
+                    {branding.name}
+                    {branding.subtitle && (
+                        <span className="ml-1 font-normal opacity-80">{branding.subtitle}</span>
                     )}
-                </div>
-            )}
+                </span>
+                {branding.tagline && (
+                    <span className="truncate text-[9px] uppercase tracking-widest opacity-60">
+                        {branding.tagline}
+                    </span>
+                )}
+            </div>
         </>
     );
 }
