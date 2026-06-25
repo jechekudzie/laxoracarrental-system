@@ -44,10 +44,10 @@ class LaxoraVehicleLicenceSeeder extends Seeder
 
             $rows[] = [
                 'vehicle_id' => $vehicleId,
-                'type' => 'vehicle_licence',
-                'label' => 'Vehicle Licence (CVR)',
+                'type' => 'zinara',
+                'label' => 'Vehicle Licence (CVR / ZINARA)',
                 'document_number' => null,
-                'provider' => 'Zimbabwe Republic Police / CVR',
+                'provider' => 'ZINARA',
                 'issue_date' => null,
                 'expiry_date' => $licenceExpiry,
                 'cost' => 0,
@@ -62,10 +62,10 @@ class LaxoraVehicleLicenceSeeder extends Seeder
             if ($radioExpiry) {
                 $rows[] = [
                     'vehicle_id' => $vehicleId,
-                    'type' => 'radio_licence',
-                    'label' => 'Radio Licence',
+                    'type' => 'zbc',
+                    'label' => 'Radio Licence (ZBC)',
                     'document_number' => null,
-                    'provider' => 'POTRAZ',
+                    'provider' => 'ZBC',
                     'issue_date' => null,
                     'expiry_date' => $radioExpiry,
                     'cost' => 0,
