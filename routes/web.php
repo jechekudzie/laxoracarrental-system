@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\V1\FileUploadController;
+use App\Http\Controllers\Web\AgreementTemplateController;
 use App\Http\Controllers\Web\BookingCategoryController;
 use App\Http\Controllers\Web\BookingController;
+use App\Http\Controllers\Web\CashDeclarationController;
 use App\Http\Controllers\Web\ComplianceController;
 use App\Http\Controllers\Web\CostCenterController;
 use App\Http\Controllers\Web\CustomerController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\Web\OperationalExpenseController;
 use App\Http\Controllers\Web\PaymentController;
 use App\Http\Controllers\Web\PaymentMethodController;
 use App\Http\Controllers\Web\QuotationController;
+use App\Http\Controllers\Web\RentalAgreementController;
 use App\Http\Controllers\Web\ReportController;
 use App\Http\Controllers\Web\RequisitionController;
 use App\Http\Controllers\Web\SalaryController;
@@ -162,6 +165,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->parameters(['expense-templates' => 'expenseTemplate'])
         ->names('finance.expense-templates')
         ->except(['create', 'show', 'edit']);
+
+    // Legal
+    Route::prefix('legal')->name('legal.')->group(function () {
+        // Agreement templates
+        Route::get('/templates', [AgreementTemplateController::class, 'index'])->name('templates.index');
+        Route::get('/templates/create', [AgreementTemplateController::class, 'create'])->name('templates.create');
+        Route::post('/templates', [AgreementTemplateController::class, 'store'])->name('templates.store');
+        Route::get('/templates/{agreementTemplate}/edit', [AgreementTemplateController::class, 'edit'])->name('templates.edit');
+        Route::put('/templates/{agreementTemplate}', [AgreementTemplateController::class, 'update'])->name('templates.update');
+        Route::delete('/templates/{agreementTemplate}', [AgreementTemplateController::class, 'destroy'])->name('templates.destroy');
+
+        // Rental agreements
+        Route::get('/agreements', [RentalAgreementController::class, 'index'])->name('agreements.index');
+        Route::get('/agreements/create', [RentalAgreementController::class, 'create'])->name('agreements.create');
+        Route::post('/agreements', [RentalAgreementController::class, 'store'])->name('agreements.store');
+        Route::get('/agreements/{rentalAgreement}', [RentalAgreementController::class, 'show'])->name('agreements.show');
+        Route::post('/agreements/{rentalAgreement}/sign', [RentalAgreementController::class, 'sign'])->name('agreements.sign');
+        Route::get('/agreements/{rentalAgreement}/pdf', [RentalAgreementController::class, 'downloadPdf'])->name('agreements.pdf');
+        Route::delete('/agreements/{rentalAgreement}', [RentalAgreementController::class, 'destroy'])->name('agreements.destroy');
+
+        // Cash declarations
+        Route::get('/cash-declarations', [CashDeclarationController::class, 'index'])->name('cash-declarations.index');
+        Route::get('/cash-declarations/create', [CashDeclarationController::class, 'create'])->name('cash-declarations.create');
+        Route::post('/cash-declarations', [CashDeclarationController::class, 'store'])->name('cash-declarations.store');
+        Route::get('/cash-declarations/{cashDeclaration}', [CashDeclarationController::class, 'show'])->name('cash-declarations.show');
+        Route::get('/cash-declarations/{cashDeclaration}/pdf', [CashDeclarationController::class, 'downloadPdf'])->name('cash-declarations.pdf');
+        Route::delete('/cash-declarations/{cashDeclaration}', [CashDeclarationController::class, 'destroy'])->name('cash-declarations.destroy');
+    });
 
     // Reports
     Route::prefix('reports')->name('reports.')->group(function () {

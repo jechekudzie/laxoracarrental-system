@@ -27,7 +27,7 @@
         .header {
             display: table;
             width: 100%;
-            border-bottom: 3px solid #4f46e5;
+            border-bottom: 3px solid #c2943f;
             padding-bottom: 16px;
             margin-bottom: 24px;
         }
@@ -47,7 +47,7 @@
         .brand {
             font-size: 22px;
             font-weight: bold;
-            color: #4f46e5;
+            color: #c2943f;
             letter-spacing: -0.5px;
         }
 
@@ -76,7 +76,7 @@
 
         .doc-number {
             font-size: 14px;
-            color: #4f46e5;
+            color: #c2943f;
             font-weight: bold;
             margin-top: 2px;
             font-family: 'DejaVu Sans Mono', monospace;
@@ -165,7 +165,7 @@
         /* Booking strip */
         .booking-strip {
             background: #f8fafc;
-            border-left: 3px solid #4f46e5;
+            border-left: 3px solid #c2943f;
             padding: 10px 14px;
             margin-bottom: 18px;
         }
@@ -254,7 +254,7 @@
             width: 45%;
             background: #f8fafc;
             padding: 14px;
-            border-left: 3px solid #4f46e5;
+            border-left: 3px solid #c2943f;
         }
 
         .totals-row {
@@ -502,8 +502,7 @@
     <!-- Header -->
     <div class="header">
         <div class="header-left">
-            <div class="brand">Laxora</div>
-            <div class="brand-sub">Car Rental</div>
+            <img src="{{ public_path('logo.jpg') }}" alt="Laxora Car Rental" style="height:50px; width:auto; display:block; margin-bottom:6px;">
             <div class="brand-contact">
                 Harare Office · Zimbabwe<br>
                 +263 77 000 0000 · hello@laxora.co.zw

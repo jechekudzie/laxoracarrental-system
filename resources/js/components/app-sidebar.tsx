@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { BarChart2, Building2, CalendarDays, Car, ChevronDown, CircleDollarSign, ClipboardList, CreditCard, FileText, Layers, LayoutGrid, LineChart, ListChecks, Receipt, ShieldCheck, Users, Wallet, Wrench } from 'lucide-react';
+import { Banknote, BarChart2, Building2, CalendarDays, Car, ChevronDown, CircleDollarSign, ClipboardList, CreditCard, FileSignature, FileText, Layers, LayoutGrid, LayoutTemplate, LineChart, ListChecks, Receipt, Scale, ShieldCheck, Users, Wallet, Wrench } from 'lucide-react';
 import { useState } from 'react';
 import AppLogo from '@/components/app-logo';
 import { NavUser } from '@/components/nav-user';
@@ -35,6 +35,9 @@ import * as SalaryRoutes from '@/actions/App/Http/Controllers/Web/SalaryControll
 import * as TaskRoutes from '@/actions/App/Http/Controllers/Web/WorkerTaskController';
 import * as PaymentMethodRoutes from '@/actions/App/Http/Controllers/Web/PaymentMethodController';
 import * as ExpenseTemplateRoutes from '@/actions/App/Http/Controllers/Web/ExpenseTemplateController';
+import * as AgreementTemplateRoutes from '@/actions/App/Http/Controllers/Web/AgreementTemplateController';
+import * as RentalAgreementRoutes from '@/actions/App/Http/Controllers/Web/RentalAgreementController';
+import * as CashDeclarationRoutes from '@/actions/App/Http/Controllers/Web/CashDeclarationController';
 import type { NavItem } from '@/types';
 
 const operationsNav: NavItem[] = [
@@ -66,6 +69,12 @@ const reportsNav: NavItem[] = [
     { title: 'Tasks', href: '/reports/tasks', icon: ClipboardList },
     { title: 'Customer Statements', href: '/reports/statements/customers', icon: FileText },
     { title: 'Organisation Statement', href: '/reports/statements/organisation', icon: LineChart },
+];
+
+const legalNav: NavItem[] = [
+    { title: 'Agreements', href: RentalAgreementRoutes.index.url(), icon: FileSignature },
+    { title: 'Agreement Templates', href: AgreementTemplateRoutes.index.url(), icon: LayoutTemplate },
+    { title: 'Cash Declarations', href: CashDeclarationRoutes.index.url(), icon: Banknote },
 ];
 
 const financeNav: NavItem[] = [
@@ -133,6 +142,7 @@ export function AppSidebar() {
                 <NavGroup label="Fleet" items={fleetNav} />
                 <NavGroup label="HR" items={peopleNav} />
                 <NavGroup label="Finance" items={financeNav} />
+                <NavGroup label="Legal" items={legalNav} />
                 <NavGroup label="Reports" items={reportsNav} />
             </SidebarContent>
 

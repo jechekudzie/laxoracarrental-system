@@ -105,6 +105,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
                         {/* Desktop nav links */}
                         <nav className="hidden items-center gap-6 md:flex">
+                            <a href="#about" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">About</a>
                             <a href="#features" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">Features</a>
                             <a href="#how-it-works" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">How it works</a>
                             <a href="#modules" className="text-sm font-medium text-stone-500 transition-colors hover:text-stone-900 dark:text-stone-400 dark:hover:text-white">Modules</a>
@@ -262,6 +263,65 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ── About Us ── */}
+                <section id="about" className="border-t border-stone-100 py-24 dark:border-stone-900">
+                    <div className="mx-auto max-w-6xl px-6">
+                        {/* Intro */}
+                        <div className="mx-auto max-w-3xl text-center">
+                            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: GOLD }}>About Us</p>
+                            <h2 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">
+                                Laxora Car Rental —{' '}
+                                <span style={{ color: GOLD }}>Where Every Ride Feels First Class.</span>
+                            </h2>
+                            <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-stone-500 dark:text-stone-400">
+                                At LAXORA, we redefine mobility through elegance, precision and refined travel experiences.
+                                We provide premium car rental solutions that blend luxury, comfort and reliability, ensuring
+                                every journey is seamless, sophisticated and memorable. Committed to exceptional service and
+                                uncompromising standards, we deliver a travel experience distinguished by comfort, prestige
+                                and confidence.
+                            </p>
+                        </div>
+
+                        {/* Vision & Mission */}
+                        <div className="mt-16 grid gap-8 sm:grid-cols-2">
+                            {/* Vision */}
+                            <div
+                                className="relative overflow-hidden rounded-3xl p-10"
+                                style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1208 60%, #2a1e08 100%)' }}
+                            >
+                                <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full blur-2xl" style={{ background: 'rgba(194,148,63,0.15)' }} />
+                                <div className="relative">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-stone-500">Our</p>
+                                    <h3 className="mt-1 text-4xl font-black tracking-tight" style={{ color: GOLD }}>Vision</h3>
+                                    <p className="mt-5 text-base leading-relaxed text-stone-300">
+                                        To become the world's leading mobility brand, delivering luxury and first-class travel
+                                        experiences defined by excellence, precision, trust and innovation, where every journey
+                                        reflects comfort, reliability, elevated service standards and exceptional customer
+                                        satisfaction.
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Mission */}
+                            <div
+                                className="relative overflow-hidden rounded-3xl p-10"
+                                style={{ background: 'linear-gradient(135deg, #0a0a0a 0%, #1a1208 60%, #2a1e08 100%)' }}
+                            >
+                                <div className="absolute -bottom-8 -left-8 h-40 w-40 rounded-full blur-2xl" style={{ background: 'rgba(194,148,63,0.12)' }} />
+                                <div className="relative">
+                                    <p className="text-xs font-semibold uppercase tracking-widest text-stone-500">Our</p>
+                                    <h3 className="mt-1 text-4xl font-black tracking-tight" style={{ color: GOLD }}>Mission</h3>
+                                    <p className="mt-5 text-base leading-relaxed text-stone-300">
+                                        To provide premium, dependable mobility through operational excellence and continuous
+                                        improvement guided by customer needs, delivering safe, seamless and consistently
+                                        superior travel experiences that embody the Laxora standard.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>

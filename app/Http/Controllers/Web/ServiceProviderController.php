@@ -90,7 +90,7 @@ class ServiceProviderController extends Controller
         return $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'category' => ['required', 'string', 'in:mechanic,tow,car_wash,parts,insurance,tyres,panelbeater,other'],
-            'phone' => ['required', 'string', 'max:30'],
+            'phone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:120'],
             'address' => ['nullable', 'string', 'max:200'],
             'contact_person' => ['nullable', 'string', 'max:120'],
